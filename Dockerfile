@@ -3,6 +3,9 @@ FROM node:24-alpine AS frontend-build
 
 WORKDIR /var/www/html
 
+# Set NODE_OPTIONS to increase memory limit for Node.js
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Copy package files
 COPY package*.json ./
 
