@@ -41,25 +41,10 @@ RUN apt-get update && apt-get install -y \
     libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-    pdo_mysql \
-    pdo_sqlite \
-    gd \
-    zip \
-    bcmath \
-    opcache \
-    intl \
-    mbstring \
-    xml \
-    curl \
-    dom \
-    filter \
-    hash \
-    json \
-    session \
-    tokenizer
+# Install PHP extensions separately for better error handling
+RUN docker-php-ext-install -j$(nproc) pdo_mysql pdo_sqlite
+RUN docker-php-ext-install -j$(nproc) zip bcmath opcache intl mbstring xml curl dom filter hash json session tokenizer
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install -j$(nproc) gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
