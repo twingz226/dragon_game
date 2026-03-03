@@ -1,0 +1,63 @@
+# Git
+.git
+.gitattributes
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
+SOLUTION_SUMMARY.md
+
+# Environment and cache
+.env
+.env.*
+node_modules/
+vendor/
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/testing/
+storage/framework/views/
+bootstrap/cache/
+
+# Development files
+.phpunit.result.cache
+.php-cs-fixer.cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Operating system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Test files
+tests/
+phpunit.xml
+
+# Build artifacts that will be rebuilt
+public/build/
+public/hot
+
+# Local configuration
+docker-compose.yml
+docker-compose.*.yml
