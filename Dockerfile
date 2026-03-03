@@ -78,9 +78,11 @@ RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
 # Configure Apache for Laravel and Railway port
 RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/' /etc/apache2/sites-available/000-default.conf \
-    && sed -i 's/AllowOverride None/AllowOverride All/' /etc/apache2/sites-available/000-default.conf \
     && sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf \
     && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' /etc/apache2/sites-available/000-default.conf
+
+# Add Directory directive for Laravel public — essential for .htaccess / mod_rewrite
+RUN echo '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>' >> /etc/apache2/sites-available/000-default.conf
 
 # Create startup script using a heredoc to avoid echo escaping issues
 RUN cat <<'EOF' > /start.sh
@@ -125,10 +127,11 @@ echo "==> Running migrations..."
 php artisan migrate --force --no-interaction || echo "WARNING: Migrations failed, continuing..."
 
 # Cache configurations for performance (non-fatal)
-echo "==> Caching config, routes, and views..."
+echo "==> Caching config and views..."
 php artisan config:cache || echo "WARNING: config:cache failed"
-php artisan route:cache || echo "WARNING: route:cache failed"
-php artisan view:cache  || echo "WARNING: view:cache failed"
+# NOTE: route:cache CANNOT be used with closure-based routes — skip it
+php artisan route:clear  || true
+php artisan view:cache   || echo "WARNING: view:cache failed"
 
 echo "==> Starting Apache on port 8080..."
 exec apache2-foreground
