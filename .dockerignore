@@ -13,7 +13,6 @@ SOLUTION_SUMMARY.md
 
 # Environment and cache
 .env
-.env.*
 node_modules/
 vendor/
 storage/logs/

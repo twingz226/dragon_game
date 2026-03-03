@@ -39,11 +39,12 @@ RUN apt-get update && apt-get install -y \
     curl \
     libpq-dev \
     libsqlite3-dev \
+    libicu-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions separately for better error handling
 RUN docker-php-ext-install -j$(nproc) pdo_mysql pdo_sqlite
-RUN docker-php-ext-install -j$(nproc) zip bcmath opcache intl mbstring xml curl dom filter hash json session tokenizer
+RUN docker-php-ext-install -j$(nproc) zip bcmath opcache intl
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install -j$(nproc) gd
 
 # Install Composer
@@ -61,25 +62,22 @@ COPY . .
 # Copy built frontend assets from previous stage
 COPY --from=frontend-build /var/www/html/public/build/ public/build/
 
+# Ensure directories exist
+RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
+
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/bootstrap/cache
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/bootstrap/cache
 
 # Create .env file if it doesn't exist
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
-# Optimize Laravel for production
-RUN php artisan config:clear \
-    && php artisan config:cache \
-    && php artisan route:clear \
-    && php artisan route:cache \
-    && php artisan view:clear \
-    && php artisan view:cache \
-    && php artisan optimize:clear
+# We skip build-time config/route caching because runtime env variables are needed.
+# The caching is done inside start.sh when the container boots.
 
 # Configure Apache for Laravel and Railway port
 RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/' /etc/apache2/sites-available/000-default.conf \
@@ -89,25 +87,25 @@ RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/publi
 
 # Create startup script
 RUN echo '#!/bin/bash\n\
-# Wait for database connection if needed\n\
-if [ ! -z "$DB_HOST" ]; then\n\
+    # Wait for database connection if needed\n\
+    if [ ! -z "$DB_HOST" ]; then\n\
     echo "Waiting for database connection..."\n\
     until php artisan db:show --database=laravel 2>/dev/null; do\n\
-        sleep 2\n\
+    sleep 2\n\
     done\n\
     echo "Database is ready!"\n\
-fi\n\
-\n\
-# Run database migrations\n\
-php artisan migrate --force --no-interaction\n\
-\n\
-# Clear and cache configurations\n\
-php artisan config:cache\n\
-php artisan route:cache\n\
-php artisan view:cache\n\
-\n\
-# Start Apache in foreground\n\
-apache2-foreground' > /start.sh && chmod +x /start.sh
+    fi\n\
+    \n\
+    # Run database migrations\n\
+    php artisan migrate --force --no-interaction\n\
+    \n\
+    # Clear and cache configurations\n\
+    php artisan config:cache\n\
+    php artisan route:cache\n\
+    php artisan view:cache\n\
+    \n\
+    # Start Apache in foreground\n\
+    apache2-foreground' > /start.sh && chmod +x /start.sh
 
 # Expose port for Railway
 EXPOSE 8080
