@@ -3,15 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
-// Health check endpoint for Railway monitoring — MUST be first, before any middleware
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now()->toISOString(),
-        'service' => 'DinoRace API',
-        'version' => app()->version()
-    ]);
-});
+// Health check is handled by the built-in Laravel health endpoint (see bootstrap/app.php)
 
 // Authentication routes for guests only
 Route::middleware('guest')->group(function () {
@@ -32,7 +24,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-// Protected game routes — catch-all MUST be last to avoid swallowing /health
+// Protected game routes — catch-all MUST be last
 Route::middleware(['auth'])->group(function () {
     // Serve the Vue SPA shell for all authenticated routes
     Route::get('/{any}', function () {

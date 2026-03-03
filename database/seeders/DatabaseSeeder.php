@@ -15,24 +15,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Use firstOrCreate to prevent duplicates on re-deployment
+        User::firstOrCreate(
+            ['email' => 'krislan@gmail.com'],
+            ['name' => 'Krislan', 'password' => 'krislan123']
+        );
 
-        User::factory()->create([
-            'name' => 'Krislan',
-            'email' => 'krislan@gmail.com',
-            'password' => 'krislan123',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'ranzel@gmail.com'],
+            ['name' => 'Ranzel', 'password' => 'ranzel123']
+        );
 
-        User::factory()->create([
-            'name' => 'Ranzel',
-            'email' => 'ranzel@gmail.com',
-            'password' => 'ranzel123',
-        ]);
-
-        User::factory()->create([
-            'name' => 'Ryza',
-            'email' => 'ryza@gmail.com',
-            'password' => 'ryza123',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'ryza@gmail.com'],
+            ['name' => 'Ryza', 'password' => 'ryza123']
+        );
     }
 }

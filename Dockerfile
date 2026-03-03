@@ -91,24 +91,28 @@ RUN cat <<'EOF' > /start.sh
 
 echo "==> Starting DinoRace..."
 
-# Ensure the SQLite DB lives in a writable location
-export DB_DATABASE="${DB_DATABASE:-/var/www/html/database/database.sqlite}"
-if [ ! -f "$DB_DATABASE" ]; then
-    echo "==> Creating SQLite database at $DB_DATABASE..."
-    touch "$DB_DATABASE"
-    chown www-data:www-data "$DB_DATABASE"
+# ── 1. Minimal env setup ──────────────────────────────────────────
+# For SQLite: ensure the file exists
+DB_CONN="${DB_CONNECTION:-sqlite}"
+if [ "$DB_CONN" = "sqlite" ]; then
+    export DB_DATABASE="${DB_DATABASE:-/var/www/html/database/database.sqlite}"
+    if [ ! -f "$DB_DATABASE" ]; then
+        echo "==> Creating SQLite database at $DB_DATABASE..."
+        touch "$DB_DATABASE"
+        chown www-data:www-data "$DB_DATABASE"
+    fi
 fi
 
-# Generate APP_KEY if not set
+# Generate APP_KEY only if completely missing
 if [ -z "$APP_KEY" ]; then
     echo "==> Generating APP_KEY..."
-    php artisan key:generate --force || echo "WARNING: key:generate failed, continuing..."
+    php artisan key:generate --force 2>&1 || echo "WARNING: key:generate failed"
 fi
 
-# Wait for database connection if DB_HOST is set (MySQL/Postgres mode)
-if [ -n "$DB_HOST" ]; then
-    echo "==> Waiting for database at $DB_HOST..."
-    MAX_RETRIES=30
+# ── 2. Only wait for external DB if NOT using SQLite ──────────────
+if [ "$DB_CONN" != "sqlite" ] && [ -n "$DB_HOST" ]; then
+    echo "==> Waiting for $DB_CONN database at $DB_HOST..."
+    MAX_RETRIES=15
     COUNT=0
     until php artisan db:show 2>/dev/null | grep -q "mysql\|pgsql" || [ $COUNT -ge $MAX_RETRIES ]; do
         echo "    Database not ready, retrying in 2s... ($COUNT/$MAX_RETRIES)"
@@ -122,17 +126,20 @@ if [ -n "$DB_HOST" ]; then
     fi
 fi
 
-# Run database migrations (non-fatal — app still boots without migrations)
+# ── 3. Run migrations + seed (non-fatal) ─────────────────────────
 echo "==> Running migrations..."
-php artisan migrate --force --no-interaction || echo "WARNING: Migrations failed, continuing..."
+php artisan migrate --force --no-interaction 2>&1 || echo "WARNING: Migrations failed, continuing..."
 
-# Cache configurations for performance (non-fatal)
-echo "==> Caching config and views..."
-php artisan config:cache || echo "WARNING: config:cache failed"
-# NOTE: route:cache CANNOT be used with closure-based routes — skip it
-php artisan route:clear  || true
-php artisan view:cache   || echo "WARNING: view:cache failed"
+echo "==> Seeding database..."
+php artisan db:seed --force --no-interaction 2>&1 || echo "WARNING: db:seed failed, continuing..."
 
+# ── 4. Clear caches (don't cache config — let env vars resolve at runtime) ─
+echo "==> Clearing caches..."
+php artisan config:clear  2>&1 || true
+php artisan route:clear   2>&1 || true
+php artisan view:cache    2>&1 || echo "WARNING: view:cache failed"
+
+# ── 5. Start Apache ──────────────────────────────────────────────
 echo "==> Starting Apache on port 8080..."
 exec apache2-foreground
 EOF
