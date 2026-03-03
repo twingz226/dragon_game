@@ -73,7 +73,6 @@ COPY . .
 
 # Copy built frontend assets from previous stage
 COPY --from=frontend-build /var/www/html/public/build/ public/build/
-COPY --from=frontend-build /var/www/html/public/hot public/hot
 
 # Install Composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
