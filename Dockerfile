@@ -76,39 +76,49 @@ RUN chown -R www-data:www-data /var/www/html \
 # Create .env file if it doesn't exist
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
-# We skip build-time config/route caching because runtime env variables are needed.
-# The caching is done inside start.sh when the container boots.
-
 # Configure Apache for Laravel and Railway port
 RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/' /etc/apache2/sites-available/000-default.conf \
     && sed -i 's/AllowOverride None/AllowOverride All/' /etc/apache2/sites-available/000-default.conf \
     && sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf \
     && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' /etc/apache2/sites-available/000-default.conf
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-    # Wait for database connection if needed\n\
-    if [ ! -z "$DB_HOST" ]; then\n\
-    echo "Waiting for database connection..."\n\
-    until php artisan db:show --database=laravel 2>/dev/null; do\n\
-    sleep 2\n\
-    done\n\
-    echo "Database is ready!"\n\
-    fi\n\
-    \n\
-    # Run database migrations\n\
-    php artisan migrate --force --no-interaction\n\
-    \n\
-    # Clear and cache configurations\n\
-    php artisan config:cache\n\
-    php artisan route:cache\n\
-    php artisan view:cache\n\
-    \n\
-    # Start Apache in foreground\n\
-    apache2-foreground' > /start.sh && chmod +x /start.sh
+# Create startup script using a heredoc to avoid echo escaping issues
+RUN cat <<'EOF' > /start.sh
+#!/bin/bash
+set -e
 
-# Expose port for Railway
-EXPOSE 8080
+echo "==> Starting DinoRace..."
+
+# Generate APP_KEY if not set
+if [ -z "$APP_KEY" ]; then
+    echo "==> Generating APP_KEY..."
+    php artisan key:generate --force
+fi
+
+# Wait for database connection if DB_HOST is set
+if [ -n "$DB_HOST" ]; then
+    echo "==> Waiting for database at $DB_HOST..."
+    until php artisan db:show 2>/dev/null | grep -q "mysql\|sqlite\|pgsql"; do
+        echo "    Database not ready, retrying in 2s..."
+        sleep 2
+    done
+    echo "==> Database is ready!"
+fi
+
+# Run database migrations
+echo "==> Running migrations..."
+php artisan migrate --force --no-interaction
+
+# Cache configurations for performance
+echo "==> Caching config, routes, and views..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+echo "==> Starting Apache on port 8080..."
+exec apache2-foreground
+EOF
+RUN chmod +x /start.sh
 
 # Set environment variables
 ENV APACHE_RUN_USER=www-data
@@ -117,9 +127,8 @@ ENV APACHE_LOG_DIR=/var/log/apache2
 ENV APACHE_LOCK_DIR=/var/lock/apache2
 ENV APACHE_PID_FILE=/var/run/apache2/apache2.pid
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8080/ || exit 1
+# Expose port for Railway
+EXPOSE 8080
 
 # Start the application
-CMD ["/start.sh"]
+CMD ["/bin/bash", "/start.sh"]
