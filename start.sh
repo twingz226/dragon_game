@@ -52,5 +52,11 @@ php artisan route:clear   2>&1 || true
 php artisan view:cache    2>&1 || echo "WARNING: view:cache failed"
 
 # ── 5. Start Apache ──────────────────────────────────────────────
+echo "==> Start Apache..."
+# Aggressively ensure only prefork MPM is loaded, as mod_php requires it.
+# Some platforms or base image quirks might try to load event or worker.
+a2dismod mpm_event mpm_worker 2>/dev/null || true
+a2enmod mpm_prefork 2>/dev/null || true
+
 echo "==> Starting Apache on port 8080..."
 exec apache2-foreground

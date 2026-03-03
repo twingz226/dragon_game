@@ -24,7 +24,7 @@ RUN npm run build
 FROM php:8.2-apache-bullseye
 
 # Install system dependencies and PHP extensions
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     libpng-dev \
     libjpeg-dev \
