@@ -85,35 +85,50 @@ RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/publi
 # Create startup script using a heredoc to avoid echo escaping issues
 RUN cat <<'EOF' > /start.sh
 #!/bin/bash
-set -e
+# Do NOT use set -e — we want Apache to start even if migrations fail
 
 echo "==> Starting DinoRace..."
+
+# Ensure the SQLite DB lives in a writable location
+export DB_DATABASE="${DB_DATABASE:-/var/www/html/database/database.sqlite}"
+if [ ! -f "$DB_DATABASE" ]; then
+    echo "==> Creating SQLite database at $DB_DATABASE..."
+    touch "$DB_DATABASE"
+    chown www-data:www-data "$DB_DATABASE"
+fi
 
 # Generate APP_KEY if not set
 if [ -z "$APP_KEY" ]; then
     echo "==> Generating APP_KEY..."
-    php artisan key:generate --force
+    php artisan key:generate --force || echo "WARNING: key:generate failed, continuing..."
 fi
 
-# Wait for database connection if DB_HOST is set
+# Wait for database connection if DB_HOST is set (MySQL/Postgres mode)
 if [ -n "$DB_HOST" ]; then
     echo "==> Waiting for database at $DB_HOST..."
-    until php artisan db:show 2>/dev/null | grep -q "mysql\|sqlite\|pgsql"; do
-        echo "    Database not ready, retrying in 2s..."
+    MAX_RETRIES=30
+    COUNT=0
+    until php artisan db:show 2>/dev/null | grep -q "mysql\|pgsql" || [ $COUNT -ge $MAX_RETRIES ]; do
+        echo "    Database not ready, retrying in 2s... ($COUNT/$MAX_RETRIES)"
         sleep 2
+        COUNT=$((COUNT+1))
     done
-    echo "==> Database is ready!"
+    if [ $COUNT -ge $MAX_RETRIES ]; then
+        echo "WARNING: Database never became ready, proceeding anyway..."
+    else
+        echo "==> Database is ready!"
+    fi
 fi
 
-# Run database migrations
+# Run database migrations (non-fatal — app still boots without migrations)
 echo "==> Running migrations..."
-php artisan migrate --force --no-interaction
+php artisan migrate --force --no-interaction || echo "WARNING: Migrations failed, continuing..."
 
-# Cache configurations for performance
+# Cache configurations for performance (non-fatal)
 echo "==> Caching config, routes, and views..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan config:cache || echo "WARNING: config:cache failed"
+php artisan route:cache || echo "WARNING: route:cache failed"
+php artisan view:cache  || echo "WARNING: view:cache failed"
 
 echo "==> Starting Apache on port 8080..."
 exec apache2-foreground
