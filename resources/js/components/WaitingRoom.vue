@@ -8,36 +8,49 @@ const emit = defineEmits(['gameStarted', 'back']);
 const players = ref([]);
 const loading = ref(false);
 const error = ref('');
-const refreshInterval = ref(null);
 const gameStartTimeout = ref(null);
+const echoChannel = ref(null);
 
-// Fetch players from API
+// Normalize a presence-channel user object into the same shape
+// the API returns, so the template doesn't need to change.
+function normalizeUser(user) {
+    return {
+        id: user.id ?? user.player_id,
+        name: user.name ?? user.player_name ?? 'Unknown',
+        isHost: !!(user.isHost ?? user.is_host),
+    };
+}
+
+// Fetch players from API once as a safety net (no interval)
 async function fetchPlayers() {
     try {
         const response = await axios.get(`/api/rooms/${props.roomCode}/players`);
-        players.value = response.data;
+        // Only overwrite if the presence channel hasn't populated the list yet
+        if (players.value.length === 0) {
+            players.value = response.data;
+        }
     } catch (e) {
-        console.error('Failed to fetch players:', e);
+        // Silently ignore — the presence channel is the primary source of truth
+        console.warn('[WaitingRoom] Initial player fetch failed (non-fatal):', e.message);
     }
 }
 
 async function startGame() {
     if (!props.isHost) return;
-    
+
     loading.value = true;
     error.value = '';
-    
+
     try {
         console.log('Host starting game for room:', props.roomCode);
-        
-        // Update room status to playing - this will broadcast the event
+
         await axios.patch(`/api/rooms/${props.roomCode}/status`, {
             status: 'playing'
         });
-        
+
         console.log('Game status updated, waiting for broadcast event...');
-        
-        // Set a fallback timeout in case broadcast doesn't work
+
+        // Fallback: proceed after 3 s if the broadcast never arrives
         gameStartTimeout.value = setTimeout(() => {
             console.log('Fallback timeout reached, proceeding with game start...');
             loading.value = false;
@@ -46,8 +59,8 @@ async function startGame() {
                 is_host: props.isHost,
                 obstacle_seed: Math.floor(Math.random() * 999999999)
             });
-        }, 3000); // 3 second fallback
-        
+        }, 3000);
+
     } catch (e) {
         console.error('Failed to start game:', e);
         error.value = 'Failed to start game';
@@ -60,66 +73,58 @@ function backToLobby() {
 }
 
 onMounted(() => {
-    // Initial fetch
+    // One-time fetch as a fallback safety net
     fetchPlayers();
-    
-    // Refresh players list every 2 seconds
-    refreshInterval.value = setInterval(fetchPlayers, 2000);
-    
+
     console.log(`Player ${props.playerName} (${props.playerId}) joining room ${props.roomCode}`);
-    
-    // Listen for game started broadcast
-    window.Echo.join(`game.room.${props.roomCode}`)
+
+    // Use the presence channel as the single source of truth for the player list.
+    // here/joining/leaving fire in real-time — no polling needed.
+    echoChannel.value = window.Echo.join(`game.room.${props.roomCode}`)
         .here((users) => {
-            console.log('Successfully joined presence channel. Current users:', users);
+            console.log('Presence channel: current users:', users);
+            players.value = users.map(normalizeUser);
         })
         .joining((user) => {
-            console.log('Player joining:', user);
+            console.log('Presence channel: player joined:', user);
+            const normalized = normalizeUser(user);
+            if (!players.value.find(p => p.id === normalized.id)) {
+                players.value.push(normalized);
+            }
         })
         .leaving((user) => {
-            console.log('Player leaving:', user);
+            console.log('Presence channel: player left:', user);
+            const id = user.id ?? user.player_id;
+            players.value = players.value.filter(p => p.id !== id);
         })
         .listen('game.started', (e) => {
-            console.log('=== GAME STARTED EVENT RECEIVED ===');
-            console.log('Full event data:', e);
-            console.log('Event type:', typeof e);
-            console.log('Event keys:', Object.keys(e || {}));
-            console.log('Room code from event:', e?.roomCode);
-            console.log('Obstacle seed from event:', e?.obstacleSeed);
-            console.log('Player transitioning to game screen...');
-            
-            // Clear the fallback timeout since we received the event
+            console.log('=== GAME STARTED EVENT RECEIVED ===', e);
+
             if (gameStartTimeout.value) {
                 clearTimeout(gameStartTimeout.value);
                 gameStartTimeout.value = null;
             }
-            
-            // Reset loading state for host
+
             loading.value = false;
-            
             emit('gameStarted', {
                 room_code: props.roomCode,
                 is_host: props.isHost,
                 obstacle_seed: e.obstacleSeed
             });
         })
-        .error((error) => {
-            console.error('Presence channel error:', error);
+        .error((err) => {
+            console.error('Presence channel error:', err);
         });
 });
 
 onUnmounted(() => {
-    if (refreshInterval.value) {
-        clearInterval(refreshInterval.value);
-    }
-    
-    // Clear the game start timeout if it exists
     if (gameStartTimeout.value) {
         clearTimeout(gameStartTimeout.value);
     }
-    
-    // Leave the Echo channel
-    window.Echo.leave(`game.room.${props.roomCode}`);
+    if (echoChannel.value) {
+        window.Echo.leave(`game.room.${props.roomCode}`);
+        echoChannel.value = null;
+    }
 });
 </script>
 
