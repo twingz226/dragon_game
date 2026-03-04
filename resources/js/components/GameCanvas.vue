@@ -39,6 +39,7 @@ const localPlayer = reactive({
     vy: 0,
     onGround: true,
     isDead: false,
+    wingPhase: 0,
 });
 
 const remotePlayers = ref({}); // { playerId: { y, isDead, name, score } }
@@ -90,12 +91,12 @@ function setupEcho() {
         .here((users) => {
             users.forEach(user => {
                 if (user.id !== props.playerId) {
-                    remotePlayers.value[user.id] = { y: groundY.value - DINO_HEIGHT, isDead: false, name: user.name };
+                    remotePlayers.value[user.id] = { y: groundY.value - DINO_HEIGHT, isDead: false, name: user.name, wingPhase: 0 };
                 }
             });
         })
         .joining((user) => {
-            remotePlayers.value[user.id] = { y: groundY.value - DINO_HEIGHT, isDead: false, name: user.name };
+            remotePlayers.value[user.id] = { y: groundY.value - DINO_HEIGHT, isDead: false, name: user.name, wingPhase: 0 };
         })
         .leaving((user) => {
             delete remotePlayers.value[user.id];
@@ -227,6 +228,19 @@ function update(dt) {
     // 1. Update Physics
     localPlayer.vy += GRAVITY * dt;
     localPlayer.y += localPlayer.vy * dt;
+    
+    // Animate wings (faster when in air)
+    const flapSpeed = localPlayer.onGround ? 10 : 25;
+    localPlayer.wingPhase = (localPlayer.wingPhase + dt * flapSpeed) % (Math.PI * 2);
+
+    // Update remote player wing animations
+    Object.values(remotePlayers.value).forEach(p => {
+        if (!p.isDead) {
+            // We don't perfectly know if they're jumping, but we can animate them
+            p.wingPhase = (p.wingPhase || 0) + dt * 15;
+            p.wingPhase %= (Math.PI * 2);
+        }
+    });
     
     if (isNaN(localPlayer.y)) {
         console.error("localPlayer.y is NaN!", { vy: localPlayer.vy, dt, GRAVITY });
@@ -461,7 +475,7 @@ function draw() {
     });
 
     // Local Player
-    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#38bdf8', props.playerName, true);
+    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#38bdf8', props.playerName, true, localPlayer.wingPhase);
 
     // Remote Players with spacing
     const playerSpacing = 60; // Horizontal spacing between players
@@ -469,7 +483,7 @@ function draw() {
     
     Object.values(remotePlayers.value).forEach(p => {
         const offsetX = canvasWidth.value/4 + ((playerIndex + 1) * playerSpacing);
-        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false);
+        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false, p.wingPhase || 0);
         playerIndex++;
     });
     
@@ -543,7 +557,7 @@ function drawBird(x, y, wingPhase) {
     c.fill();
 }
 
-function drawDino(x, y, color, name, isLocal) {
+function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     const c = ctx.value;
     
     // T-Rex body parts
@@ -570,27 +584,34 @@ function drawDino(x, y, color, name, isLocal) {
     // Snout extension
     c.fillRect(x + 36, y + 8, 6, 6);
     
+    // Dragon Tail Animation
+    const tailSwing = Math.sin(wingPhase) * 6; // swish horizontally/vertically
+    
     // Dragon Tail (longer, spiky)
     c.beginPath();
     c.moveTo(x + 8, y + 22);
-    c.lineTo(x - 4, y + 16);
-    c.lineTo(x - 12, y + 10);
-    c.lineTo(x - 8, y + 22);
+    c.lineTo(x - 4, y + 16 + tailSwing/2);
+    c.lineTo(x - 12 - Math.abs(tailSwing), y + 10 + tailSwing);
+    c.lineTo(x - 8, y + 22 + tailSwing/2);
     c.lineTo(x + 4, y + 28);
     c.closePath();
     c.fill();
+
+    // Wing Animation
+    const flapOffset = Math.sin(wingPhase) * 12; // vertical flap
+    const spreadOffset = Math.cos(wingPhase) * 4; // horizontal spread
 
     // Dragon Wings (Enhanced)
     // Draw the far wing (darker)
     c.fillStyle = isLocal ? '#0284c7' : '#334155'; // darker shade of the color
     c.beginPath();
     c.moveTo(x + 16, y + 14); // base
-    c.lineTo(x + 8, y + 2); // joint 1
-    c.lineTo(x, y - 10); // tip
-    c.lineTo(x + 12, y - 6); // middle outer
-    c.lineTo(x + 20, y - 14); // second tip
-    c.lineTo(x + 24, y - 2); // lower inner
-    c.lineTo(x + 32, y - 6); // third tip
+    c.lineTo(x + 8, y + 2 - flapOffset/2); // joint 1
+    c.lineTo(x - spreadOffset, y - 10 - flapOffset); // tip
+    c.lineTo(x + 12, y - 6 - flapOffset*0.8); // middle outer
+    c.lineTo(x + 20 + spreadOffset, y - 14 - flapOffset*1.2); // second tip
+    c.lineTo(x + 24, y - 2 - flapOffset/2); // lower inner
+    c.lineTo(x + 32 + spreadOffset, y - 6 - flapOffset); // third tip
     c.lineTo(x + 26, y + 12); // back to body
     c.closePath();
     c.fill();
@@ -599,12 +620,12 @@ function drawDino(x, y, color, name, isLocal) {
     c.fillStyle = color;
     c.beginPath();
     c.moveTo(x + 12, y + 16); // base
-    c.lineTo(x + 2, y + 4); // joint 1
-    c.lineTo(x - 8, y - 8); // tip
-    c.lineTo(x + 6, y - 4); // middle outer
-    c.lineTo(x + 14, y - 12); // second tip
-    c.lineTo(x + 18, y); // lower inner
-    c.lineTo(x + 26, y - 4); // third tip
+    c.lineTo(x + 2, y + 4 - flapOffset/2); // joint 1
+    c.lineTo(x - 8 - spreadOffset, y - 8 - flapOffset); // tip
+    c.lineTo(x + 6, y - 4 - flapOffset*0.8); // middle outer
+    c.lineTo(x + 14 + spreadOffset/2, y - 12 - flapOffset*1.2); // second tip
+    c.lineTo(x + 18, y - flapOffset/2); // lower inner
+    c.lineTo(x + 26 + spreadOffset, y - 4 - flapOffset); // third tip
     c.lineTo(x + 20, y + 14); // back to body
     c.closePath();
     c.fill();
@@ -615,17 +636,17 @@ function drawDino(x, y, color, name, isLocal) {
     // Main bone
     c.beginPath();
     c.moveTo(x + 12, y + 16);
-    c.lineTo(x + 2, y + 4);
-    c.lineTo(x - 8, y - 8);
+    c.lineTo(x + 2, y + 4 - flapOffset/2);
+    c.lineTo(x - 8 - spreadOffset, y - 8 - flapOffset);
     c.stroke();
     // Inner bones
     c.beginPath();
-    c.moveTo(x + 2, y + 4);
-    c.lineTo(x + 14, y - 12);
+    c.moveTo(x + 2, y + 4 - flapOffset/2);
+    c.lineTo(x + 14 + spreadOffset/2, y - 12 - flapOffset*1.2);
     c.stroke();
     c.beginPath();
-    c.moveTo(x + 2, y + 4);
-    c.lineTo(x + 26, y - 4);
+    c.moveTo(x + 2, y + 4 - flapOffset/2);
+    c.lineTo(x + 26 + spreadOffset, y - 4 - flapOffset);
     c.stroke();
     
     // Legs (thick)
