@@ -15,8 +15,8 @@ const JUMP_FORCE = -650;
 const GROUND_Y_DESKTOP = 250;
 const GROUND_Y_MOBILE = 150;
 const groundY = ref(window.innerWidth <= 768 ? GROUND_Y_MOBILE : GROUND_Y_DESKTOP);
-const DINO_WIDTH = 44;
-const DINO_HEIGHT = 44;
+const DINO_WIDTH = 66; // Increased from 44
+const DINO_HEIGHT = 66; // Increased from 44
 const INITIAL_SPEED = 400;
 const SPEED_INCREMENT = 0.1;
 
@@ -560,6 +560,16 @@ function drawBird(x, y, wingPhase) {
 function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     const c = ctx.value;
     
+    c.save();
+    
+    // Scale drawing proportionally based on original 44x44 size
+    const scaleX = DINO_WIDTH / 44;
+    const scaleY = DINO_HEIGHT / 44;
+    
+    c.translate(x, y);
+    c.scale(scaleX, scaleY);
+    c.translate(-x, -y);
+    
     // T-Rex body parts
     c.fillStyle = color;
     
@@ -682,6 +692,8 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     c.lineTo(x + 37, y + 14);
     c.closePath();
     c.fill();
+    
+    c.restore(); // Restore scaling before drawing the name tag
     
     // Name tag
     c.fillStyle = color;
