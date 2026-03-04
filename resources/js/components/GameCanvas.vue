@@ -570,13 +570,31 @@ function drawDino(x, y, color, name, isLocal) {
     // Snout extension
     c.fillRect(x + 36, y + 8, 6, 6);
     
-    // Tail (tapering)
+    // Dragon Tail (longer, spiky)
     c.beginPath();
-    c.moveTo(x + 8, y + 20);
-    c.lineTo(x + 2, y + 18);
-    c.lineTo(x + 4, y + 24);
+    c.moveTo(x + 8, y + 22);
+    c.lineTo(x - 4, y + 16);
+    c.lineTo(x - 12, y + 10);
+    c.lineTo(x - 8, y + 22);
+    c.lineTo(x + 4, y + 28);
     c.closePath();
     c.fill();
+
+    // Dragon Wings
+    c.beginPath();
+    c.moveTo(x + 12, y + 16);
+    c.lineTo(x + 2, y + 2);
+    c.lineTo(x + 10, y + 8);
+    c.lineTo(x + 14, y - 4);
+    c.lineTo(x + 18, y + 6);
+    c.lineTo(x + 26, y - 2);
+    c.lineTo(x + 20, y + 14);
+    c.closePath();
+    c.fill();
+    
+    c.strokeStyle = '#0f172a';
+    c.lineWidth = 1;
+    c.stroke();
     
     // Legs (thick)
     c.fillRect(x + 12, y + 28, 6, 8);
