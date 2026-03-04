@@ -8,6 +8,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script>
+        window.reverbConfig = {
+            key: '{{ config("broadcasting.connections.reverb.key", env("REVERB_APP_KEY", "")) }}',
+            wsHost: '{{ config("broadcasting.connections.reverb.options.host", env("REVERB_HOST", "")) }}',
+            wsPort: +'{{ config("broadcasting.connections.reverb.options.port", env("REVERB_PORT", 80)) }}',
+            wssPort: +'{{ config("broadcasting.connections.reverb.options.port", env("REVERB_PORT", 443)) }}',
+            scheme: '{{ config("broadcasting.connections.reverb.options.scheme", env("REVERB_SCHEME", "https")) }}'
+        };
+    </script>
     @vite(['resources/css/app.css', 'resources/js/auth.js'])
     <style>
         body {
