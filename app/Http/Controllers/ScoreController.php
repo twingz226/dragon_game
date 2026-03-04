@@ -25,7 +25,7 @@ class ScoreController extends Controller
     {
         $scores = Score::select('player_name', 'score', 'created_at')
             ->orderByDesc('score')
-            ->limit(10)
+            ->limit(5)
             ->get();
 
         return response()->json($scores);
