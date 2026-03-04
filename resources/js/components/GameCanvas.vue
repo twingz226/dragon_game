@@ -580,20 +580,52 @@ function drawDino(x, y, color, name, isLocal) {
     c.closePath();
     c.fill();
 
-    // Dragon Wings
+    // Dragon Wings (Enhanced)
+    // Draw the far wing (darker)
+    c.fillStyle = isLocal ? '#0284c7' : '#334155'; // darker shade of the color
     c.beginPath();
-    c.moveTo(x + 12, y + 16);
-    c.lineTo(x + 2, y + 2);
-    c.lineTo(x + 10, y + 8);
-    c.lineTo(x + 14, y - 4);
-    c.lineTo(x + 18, y + 6);
-    c.lineTo(x + 26, y - 2);
-    c.lineTo(x + 20, y + 14);
+    c.moveTo(x + 16, y + 14); // base
+    c.lineTo(x + 8, y + 2); // joint 1
+    c.lineTo(x, y - 10); // tip
+    c.lineTo(x + 12, y - 6); // middle outer
+    c.lineTo(x + 20, y - 14); // second tip
+    c.lineTo(x + 24, y - 2); // lower inner
+    c.lineTo(x + 32, y - 6); // third tip
+    c.lineTo(x + 26, y + 12); // back to body
     c.closePath();
     c.fill();
     
+    // Draw the near wing (lighter)
+    c.fillStyle = color;
+    c.beginPath();
+    c.moveTo(x + 12, y + 16); // base
+    c.lineTo(x + 2, y + 4); // joint 1
+    c.lineTo(x - 8, y - 8); // tip
+    c.lineTo(x + 6, y - 4); // middle outer
+    c.lineTo(x + 14, y - 12); // second tip
+    c.lineTo(x + 18, y); // lower inner
+    c.lineTo(x + 26, y - 4); // third tip
+    c.lineTo(x + 20, y + 14); // back to body
+    c.closePath();
+    c.fill();
+    
+    // Add wing bones/veins for detail
     c.strokeStyle = '#0f172a';
     c.lineWidth = 1;
+    // Main bone
+    c.beginPath();
+    c.moveTo(x + 12, y + 16);
+    c.lineTo(x + 2, y + 4);
+    c.lineTo(x - 8, y - 8);
+    c.stroke();
+    // Inner bones
+    c.beginPath();
+    c.moveTo(x + 2, y + 4);
+    c.lineTo(x + 14, y - 12);
+    c.stroke();
+    c.beginPath();
+    c.moveTo(x + 2, y + 4);
+    c.lineTo(x + 26, y - 4);
     c.stroke();
     
     // Legs (thick)
