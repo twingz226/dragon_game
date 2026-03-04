@@ -51,7 +51,12 @@ php artisan config:clear  2>&1 || true
 php artisan route:clear   2>&1 || true
 php artisan view:cache    2>&1 || echo "WARNING: view:cache failed"
 
-# ── 5. Start Apache ──────────────────────────────────────────────
+# ── 5. Start Reverb ────────────────────────────────────────────────
+echo "==> Starting Reverb in background on port 8081..."
+# We run Reverb internally, and Apache will proxy /app/ WebSocket connections to it.
+nohup php artisan reverb:start --host=127.0.0.1 --port=8081 > /var/log/reverb.log 2>&1 &
+
+# ── 6. Start Apache ──────────────────────────────────────────────
 echo "==> Start Apache..."
 # Aggressively ensure only prefork MPM is loaded, as mod_php requires it.
 # Some platforms or base image quirks might try to load event or worker.

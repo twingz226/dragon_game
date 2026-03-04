@@ -60,14 +60,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install PHP extensions separately for better error handling
 RUN docker-php-ext-install -j$(nproc) pdo_mysql pdo_sqlite
-RUN docker-php-ext-install -j$(nproc) zip bcmath opcache intl
+RUN docker-php-ext-install -j$(nproc) zip bcmath opcache intl pcntl
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg && docker-php-ext-install -j$(nproc) gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Enable Apache modules
-RUN a2enmod rewrite headers
+RUN a2enmod rewrite headers proxy proxy_http proxy_wstunnel
 
 # Set working directory
 WORKDIR /var/www/html
@@ -94,12 +94,10 @@ RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
 # Configure Apache for Laravel and Railway port
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
-    && sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/' /etc/apache2/sites-available/000-default.conf \
-    && sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf \
-    && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' /etc/apache2/sites-available/000-default.conf
+    && sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf
 
-# Add Directory directive for Laravel public — essential for .htaccess / mod_rewrite
-RUN echo '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>' >> /etc/apache2/sites-available/000-default.conf
+# Copy custom VirtualHost configuration
+COPY vhost.conf /etc/apache2/sites-available/000-default.conf
 
 # Copy startup script
 COPY start.sh /start.sh
