@@ -93,7 +93,8 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
 # Configure Apache for Laravel and Railway port
-RUN sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/' /etc/apache2/sites-available/000-default.conf \
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && sed -i 's/DocumentRoot \/var\/www\/html/DocumentRoot \/var\/www\/html\/public/' /etc/apache2/sites-available/000-default.conf \
     && sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf \
     && sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' /etc/apache2/sites-available/000-default.conf
 
