@@ -11,13 +11,26 @@ const getPlayerData = () => {
     return { playerId, playerName };
 };
 
+// Resolve config: prefer runtime-injected window.reverbConfig (set by Blade),
+// fall back to Vite build-time env vars only when the runtime value is null/undefined.
+// Use ?? (nullish) NOT || so empty strings from Blade don't falsely fall through.
+const reverbKey = (window.reverbConfig?.key ?? import.meta.env.VITE_REVERB_APP_KEY) || '';
+const reverbHost = (window.reverbConfig?.wsHost ?? import.meta.env.VITE_REVERB_HOST) || '';
+const reverbPort = window.reverbConfig?.wsPort ?? +(import.meta.env.VITE_REVERB_PORT ?? 80);
+const reverbWssPort = window.reverbConfig?.wssPort ?? +(import.meta.env.VITE_REVERB_PORT ?? 443);
+const reverbScheme = (window.reverbConfig?.scheme ?? import.meta.env.VITE_REVERB_SCHEME) || 'https';
+
+if (!reverbKey) {
+    console.error('[Echo] REVERB_APP_KEY is not set! WebSocket connection will fail. Check Railway env vars.');
+}
+
 window.Echo = new Echo({
     broadcaster: 'reverb',
-    key: window.reverbConfig?.key || import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: window.reverbConfig?.wsHost || import.meta.env.VITE_REVERB_HOST,
-    wsPort: window.reverbConfig?.wsPort || (import.meta.env.VITE_REVERB_PORT ?? 80),
-    wssPort: window.reverbConfig?.wssPort || (import.meta.env.VITE_REVERB_PORT ?? 443),
-    forceTLS: (window.reverbConfig?.scheme || (import.meta.env.VITE_REVERB_SCHEME ?? 'https')) === 'https',
+    key: reverbKey,
+    wsHost: reverbHost,
+    wsPort: reverbPort,
+    wssPort: reverbWssPort,
+    forceTLS: reverbScheme === 'https',
     enabledTransports: ['ws', 'wss'],
     // Add custom authentication configuration
     authEndpoint: '/broadcasting/auth',
