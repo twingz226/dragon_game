@@ -91,8 +91,8 @@ async function joinRoom(code = null) {
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 1rem;
-    padding: 2rem;
-    max-width: 450px;
+    padding: 1.5rem;
+    max-width: 400px;
     width: 100%;
     margin: 0 auto;
     backdrop-filter: blur(10px);
@@ -123,18 +123,18 @@ async function joinRoom(code = null) {
 .card-header p {
     color: #94a3b8;
     font-size: 0.8rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 input {
     width: 100%;
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid #334155;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     color: #f8fafc;
     font-family: 'Orbitron', sans-serif;
@@ -151,14 +151,14 @@ input:focus {
 .actions {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 button {
     cursor: pointer;
     font-family: 'Orbitron', sans-serif;
     font-weight: 700;
-    padding: 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     transition: all 0.2s;
     border: none;
@@ -218,7 +218,7 @@ button {
 }
 
 .leaderboard-section {
-    margin-top: 3rem;
+    margin-top: 1.5rem;
     display: flex;
     justify-content: center;
 }
