@@ -229,8 +229,10 @@ function update(dt) {
     localPlayer.vy += GRAVITY * dt;
     localPlayer.y += localPlayer.vy * dt;
     
-    // Animate wings (faster when in air)
-    const flapSpeed = localPlayer.onGround ? 10 : 25;
+    // Animate wings and limbs (faster when in air or when game speed increases)
+    // Scale animation speed relative to the current game speed vs the starting speed
+    const speedMultiplier = gameState.speed / INITIAL_SPEED;
+    const flapSpeed = localPlayer.onGround ? (10 * speedMultiplier) : (25 * speedMultiplier);
     localPlayer.wingPhase = (localPlayer.wingPhase + dt * flapSpeed) % (Math.PI * 2);
 
     // Update remote player wing animations
