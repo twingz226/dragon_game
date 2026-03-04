@@ -46,40 +46,40 @@ function formatDate(dateStr) {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid rgba(14, 165, 233, 0.2);
     border-radius: 0.5rem;
-    padding: 1.5rem;
+    padding: 1rem;
     width: 300px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 h3 {
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: #0ea5e9;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     text-align: center;
 }
 
 .score-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.4rem;
 }
 
 .score-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #f8fafc;
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .rank {
-    width: 30px;
+    width: 25px;
     color: #475569;
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
 }
 
 .name {
@@ -89,7 +89,7 @@ h3 {
 
 .val {
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     color: #38bdf8;
 }
 
