@@ -658,14 +658,26 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     c.moveTo(x + 2, y + 4 - flapOffset/2);
     c.lineTo(x + 26 + spreadOffset, y - 4 - flapOffset);
     c.stroke();
+    // Limb Animation
+    // We can use the wingPhase for walking as well, but scale it differently
+    const walkSwing1 = Math.sin(wingPhase) * 4; // Right leg/arm
+    const walkSwing2 = Math.cos(wingPhase) * 4; // Left leg/arm
     
     // Legs (thick)
-    c.fillRect(x + 12, y + 28, 6, 8);
-    c.fillRect(x + 22, y + 28, 6, 8);
+    // Draw far leg first (darker)
+    c.fillStyle = isLocal ? '#0284c7' : '#334155';
+    c.fillRect(x + 22 + walkSwing2, y + 28, 6, 8);
+    // Draw near leg
+    c.fillStyle = color;
+    c.fillRect(x + 12 + walkSwing1, y + 28, 6, 8);
     
     // Small arms
-    c.fillRect(x + 16, y + 18, 4, 4);
-    c.fillRect(x + 20, y + 18, 4, 4);
+    // Draw far arm
+    c.fillStyle = isLocal ? '#0284c7' : '#334155';
+    c.fillRect(x + 20 + walkSwing2, y + 18, 4, 4);
+    // Draw near arm
+    c.fillStyle = color;
+    c.fillRect(x + 16 + walkSwing1, y + 18, 4, 4);
     
     // Eye (more menacing)
     c.fillStyle = '#ffffff';
