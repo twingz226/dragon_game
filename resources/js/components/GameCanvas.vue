@@ -347,7 +347,16 @@ function update(dt) {
 
     // Spawn obstacles based on seeded random
     const lastObstacle = obstacles.value[obstacles.value.length - 1];
-    if (!lastObstacle || (canvasWidth.value - lastObstacle.x > 400 + nextRandom() * 600)) {
+    
+    // Increase distance slightly if score/speed threshold is reached
+    let minGap = 400;
+    let maxGapRange = 600;
+    if (gameState.score >= 2000 || gameState.speed >= 2000) {
+        minGap = 500;
+        maxGapRange = 750;
+    }
+
+    if (!lastObstacle || (canvasWidth.value - lastObstacle.x > minGap + nextRandom() * maxGapRange)) {
         spawnObstacle();
     }
 
@@ -394,7 +403,7 @@ function spawnObstacle() {
     const typeRand = nextRandom();
     let type;
     
-    if (typeRand > 0.7) {
+    if (typeRand > 0.7 && gameState.score >= 500) {
         type = 'bird';
     } else if (typeRand > 0.35) {
         type = 'large';
