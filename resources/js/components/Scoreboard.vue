@@ -23,7 +23,7 @@ function formatDate(dateStr) {
 
 <template>
     <div class="scoreboard">
-        <h3>GLOBAL TOP 5</h3>
+        <h3>GLOBAL TOP 10</h3>
         
         <div v-if="loading" class="loading">LOADING...</div>
         
