@@ -1007,7 +1007,7 @@ function drawRestartConfirmation() {
     background: rgba(15, 23, 42, 0.8);
     border: 1px solid rgba(14, 165, 233, 0.2);
     border-radius: 0.75rem;
-    padding: 1.25rem;
+    padding: 0.75rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -1020,13 +1020,13 @@ function drawRestartConfirmation() {
 .player-list h3 {
     font-size: 0.7rem;
     color: #475569;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     letter-spacing: 2px;
 }
 
 .player-item {
     font-size: 0.8rem;
-    padding: 0.6rem 0;
+    padding: 0.3rem 0;
     color: #cbd5e1;
     display: flex;
     flex-direction: column;
@@ -1123,9 +1123,9 @@ canvas {
 }
 
 .scoreboard-wrapper {
-    margin-top: 2rem;
+    margin-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 1rem;
+    padding-top: 0.5rem;
 }
 
 :deep(.scoreboard) {

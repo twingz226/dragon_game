@@ -56,7 +56,7 @@ onMounted(async () => {
     background: rgba(15, 23, 42, 0.95);
     border: 2px solid rgba(14, 165, 233, 0.3);
     border-radius: 0.75rem;
-    padding: 1rem;
+    padding: 0.5rem;
     width: 100%;
     max-width: 320px;
     box-shadow: 0 0 20px rgba(14, 165, 233, 0.15), 0 10px 40px rgba(0, 0, 0, 0.6);
@@ -79,7 +79,7 @@ h3 {
     font-family: 'Press Start 2P', cursive;
     font-size: 0.7rem;
     color: #f8fafc;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     text-align: center;
     letter-spacing: 1px;
     text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
@@ -88,7 +88,7 @@ h3 {
 .score-list {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.2rem;
 }
 
 .score-item {
@@ -97,7 +97,7 @@ h3 {
     align-items: center;
     font-size: 0.75rem;
     color: #f8fafc;
-    padding: 0.4rem 0.6rem;
+    padding: 0.2rem 0.4rem;
     background: rgba(255, 255, 255, 0.03);
     border-radius: 0.4rem;
     transition: all 0.2s;
