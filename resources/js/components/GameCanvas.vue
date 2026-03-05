@@ -177,6 +177,7 @@ function handleKeyDown(e) {
     console.log('Key pressed:', e.code, 'gameEnded:', gameEnded.value, 'localPlayer.isDead:', localPlayer.isDead, 'localPlayer.onGround:', localPlayer.onGround);
     
     if (e.code === 'Space') {
+        e.preventDefault();
         if (gameEnded.value) {
             // Game has ended, allow restart with confirmation
             console.log('Game ended, checking restart confirmation');
