@@ -1003,15 +1003,16 @@ function drawRestartConfirmation() {
 
 .player-list {
     width: 100%;
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.5rem;
-    padding: 1rem;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 @media (min-width: 769px) {
     .player-list {
-        width: 180px;
+        width: 280px; /* Increased from 180px */
     }
 }
 
