@@ -441,7 +441,7 @@ function spawnObstacle() {
 
 function checkCollision(player, obs, playerX = canvasWidth.value/4) {
     // Basic AABB
-    const padding = 5; // A bit of leniency
+    const padding = 0; // No leniency - character must totally touch obstacle
     const playerRight = playerX + DINO_WIDTH;
     const obsRight = obs.x + obs.width;
     
