@@ -46,9 +46,11 @@ const localPlayer = reactive({
 
 const remotePlayers = ref({}); // { playerId: { y, isDead, name, score } }
 const obstacles = ref([]);
-const particles = ref([]);
-const gameEnded = ref(false);
 const champion = ref(null);
+const scoreboardKey = ref(0);
+const showRestartConfirm = ref(false);
+
+
 
 // PRNG for synced obstacles
 let randomSeed = props.obstacleSeed;
@@ -146,9 +148,13 @@ function handleKeyDown(e) {
     
     if (e.code === 'Space') {
         if (gameEnded.value) {
-            // Game has ended, allow restart
-            console.log('Game ended, calling restartGame()');
-            restartGame();
+            // Game has ended, allow restart with confirmation
+            console.log('Game ended, checking restart confirmation');
+            if (!showRestartConfirm.value) {
+                showRestartConfirm.value = true;
+            } else {
+                restartGame();
+            }
         } else if (localPlayer.onGround && !localPlayer.isDead) {
             console.log('Jumping');
             jump();
@@ -157,13 +163,20 @@ function handleKeyDown(e) {
             console.log('Waiting for all players to finish...');
         }
     } else if (e.key === 'Escape') {
-        emit('back');
+        if (showRestartConfirm.value) {
+            showRestartConfirm.value = false;
+        } else {
+            emit('back');
+        }
     }
+
 }
 
 function restartGame() {
     console.log('=== RESTART GAME CALLED ===');
+    showRestartConfirm.value = false;
     gameState.score = 0;
+
     gameState.speed = INITIAL_SPEED;
     gameState.isRunning = true;
     gameState.lastTime = 0;
@@ -194,8 +207,12 @@ function restartGame() {
     channel.whisper('player-respawned', {
         playerId: props.playerId
     });
+
+    // Refresh scoreboard
+    scoreboardKey.value++;
     
     console.log('=== RESTART GAME COMPLETED ===');
+
 }
 
 function jump() {
@@ -223,14 +240,19 @@ function handleResize() {
 function handleTouchStart(e) {
     e.preventDefault();
     if (gameEnded.value) {
-        // Game has ended, allow restart
-        restartGame();
+        // Game has ended, allow restart with confirmation
+        if (!showRestartConfirm.value) {
+            showRestartConfirm.value = true;
+        } else {
+            restartGame();
+        }
     } else if (localPlayer.onGround && !localPlayer.isDead) {
         jump();
     } else if (localPlayer.isDead) {
         console.log('Waiting for all players to finish...');
     }
 }
+
 
 // --- Game Engine ---
 
@@ -543,7 +565,12 @@ function draw() {
     if (localPlayer.isDead || gameEnded.value) {
         drawGameOver();
     }
+
+    if (showRestartConfirm.value) {
+        drawRestartConfirmation();
+    }
 }
+
 
 function drawBird(x, y, wingPhase) {
     const c = ctx.value;
@@ -809,6 +836,58 @@ function drawGameOver() {
         c.fillText('SPACE TO RESTART • ESC TO LOBBY', canvasWidth.value/2, canvasHeight.value/2 + 70);
     }
 }
+
+function drawRestartConfirmation() {
+    const c = ctx.value;
+    const isMobileView = isMobile.value;
+    
+    // Dim background further
+    c.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    c.fillRect(0, 0, canvasWidth.value, canvasHeight.value);
+    
+    // Warning Box
+    const boxWidth = isMobileView ? 240 : 400;
+    const boxHeight = isMobileView ? 100 : 150;
+    const x = (canvasWidth.value - boxWidth) / 2;
+    const y = (canvasHeight.value - boxHeight) / 2;
+    
+    c.fillStyle = '#1e293b';
+    c.strokeStyle = '#f59e0b';
+    c.lineWidth = 2;
+    if (c.roundRect) {
+        c.beginPath();
+        c.roundRect(x, y, boxWidth, boxHeight, 10);
+        c.fill();
+        c.stroke();
+    } else {
+        c.fillRect(x, y, boxWidth, boxHeight);
+        c.strokeRect(x, y, boxWidth, boxHeight);
+    }
+    
+    // Icon (Warning Triangle)
+    c.fillStyle = '#f59e0b';
+    c.beginPath();
+    c.moveTo(canvasWidth.value / 2, y + 20);
+    c.lineTo(canvasWidth.value / 2 - 20, y + 55);
+    c.lineTo(canvasWidth.value / 2 + 20, y + 55);
+    c.closePath();
+    c.fill();
+    
+    c.fillStyle = '#1e293b';
+    c.font = 'bold 20px Arial';
+    c.fillText('!', canvasWidth.value / 2, y + 50);
+    
+    // Text
+    c.fillStyle = '#f8fafc';
+    c.font = `${isMobileView ? '10px' : '14px'} "Press Start 2P"`;
+    c.textAlign = 'center';
+    c.fillText('RESTART GAME?', canvasWidth.value / 2, y + 85);
+    
+    c.fillStyle = '#94a3b8';
+    c.font = `${isMobileView ? '8px' : '11px'} "Orbitron"`;
+    c.fillText(isMobileView ? 'TAP AGAIN TO CONFIRM' : 'PRESS SPACE TO CONFIRM • ESC TO CANCEL', canvasWidth.value / 2, y + 115);
+}
+
 </script>
 
 <template>
@@ -825,8 +904,9 @@ function drawGameOver() {
             </div>
 
             <div class="scoreboard-wrapper">
-                <Scoreboard />
+                <Scoreboard :key="scoreboardKey" />
             </div>
+
         </div>
 
         
