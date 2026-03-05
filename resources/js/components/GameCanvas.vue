@@ -55,6 +55,8 @@ const localPlayer = reactive({
 
 const remotePlayers = ref({}); // { playerId: { y, isDead, name, score } }
 const obstacles = ref([]);
+const particles = ref([]);
+const gameEnded = ref(false);
 const champion = ref(null);
 const scoreboardKey = ref(0);
 const showRestartConfirm = ref(false);
