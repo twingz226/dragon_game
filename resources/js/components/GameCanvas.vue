@@ -1,6 +1,8 @@
 <script setup>
 import { ref, onMounted, onUnmounted, reactive, watch } from 'vue';
 import axios from 'axios';
+import Scoreboard from './Scoreboard.vue';
+
 
 const props = defineProps(['roomCode', 'playerId', 'playerName', 'isHost', 'obstacleSeed']);
 const emit = defineEmits(['game-over', 'back']);
@@ -821,7 +823,12 @@ function drawGameOver() {
                  <span class="status-dot"></span>
                  {{ playerName }} (YOU)
             </div>
+
+            <div class="scoreboard-wrapper">
+                <Scoreboard />
+            </div>
         </div>
+
         
         <div class="canvas-wrapper">
             <canvas 
@@ -948,4 +955,19 @@ canvas {
         bottom: 0.5rem;
     }
 }
+
+.scoreboard-wrapper {
+    margin-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1rem;
+}
+
+:deep(.scoreboard) {
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
 </style>
+
