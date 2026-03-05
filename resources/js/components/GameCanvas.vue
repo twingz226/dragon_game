@@ -439,28 +439,88 @@ function spawnObstacle() {
     }
 }
 
-function checkCollision(player, obs, playerX = canvasWidth.value/4) {
-    // Basic AABB
-    const padding = 0; // No leniency - character must totally touch obstacle
-    const playerRight = playerX + DINO_WIDTH;
-    const obsRight = obs.x + obs.width;
-    
-    const collided = (
-        playerX < obsRight - padding &&
-        playerRight > obs.x + padding &&
-        player.y < obs.y + obs.height - padding &&
-        player.y + DINO_HEIGHT > obs.y + padding
+function rectIntersect(r1, r2) {
+    return (
+        r1.x < r2.x + r2.w &&
+        r1.x + r1.w > r2.x &&
+        r1.y < r2.y + r2.h &&
+        r1.y + r1.h > r2.y
     );
-    
-    if (collided) {
-        console.log("Collision Details:", {
-            player: { x: playerX, y: player.y, w: DINO_WIDTH, h: DINO_HEIGHT },
-            obs: { x: obs.x, y: obs.y, w: obs.width, h: obs.height },
-            padding
-        });
+}
+
+function checkCollision(player, obs, playerX = canvasWidth.value/4) {
+    // 1. Define Player Hitboxes (Head and Body)
+    // Internal shifts: ox=12, oy=14. Scaling: scaleX=DINO_WIDTH/54, scaleY=DINO_HEIGHT/50
+    const ox = 12;
+    const oy = 14;
+    const sx = DINO_WIDTH / 54;
+    const sy = DINO_HEIGHT / 50;
+
+    const playerHitboxes = [
+        // Main Body: x + 8 + ox, y + 12 + oy, width 24, height 20
+        { 
+            x: playerX + (8 + ox) * sx, 
+            y: player.y + (12 + oy) * sy, 
+            w: 24 * sx, 
+            h: 20 * sy 
+        },
+        // Head: x + 24 + ox, y + 4 + oy, width 16, height 14 + snout 6 (approx 22 width)
+        { 
+            x: playerX + (24 + ox) * sx, 
+            y: player.y + (4 + oy) * sy, 
+            w: 20 * sx, 
+            h: 14 * sy 
+        }
+    ];
+
+    // 2. Define Obstacle Hitboxes
+    let obsHitboxes = [];
+    if (obs.type === 'bird') {
+        const scale = 38 / 27;
+        // Bird body: x + 0, y + 8, w 15, h 10
+        // Bird head: x + 12, y + 6, w 8, h 8
+        // Beak: x + 18, y + 8, w 4, h 2
+        obsHitboxes = [
+            { 
+                x: obs.x + 0 * scale, 
+                y: obs.y + 6 * scale, // Combined height for body/head
+                w: 22 * scale, 
+                h: 12 * scale 
+            }
+        ];
+        
+        // Add wing hitbox (dynamic or simplified)
+        const wingOffset = Math.sin(obs.wingPhase) * 8 * scale;
+        if (wingOffset > 0) {
+            // Lower wing extended
+            obsHitboxes.push({
+                x: obs.x - 2 * scale,
+                y: obs.y + 12 * scale,
+                w: 5 * scale,
+                h: wingOffset
+            });
+        } else {
+            // Upper wing extended
+            obsHitboxes.push({
+                x: obs.x - 2 * scale,
+                y: obs.y + 10 * scale + wingOffset,
+                w: 5 * scale,
+                h: Math.abs(wingOffset)
+            });
+        }
+    } else {
+        // Ground cacti - single box is fine as they are rectangular
+        obsHitboxes = [{ x: obs.x, y: obs.y, w: obs.width, h: obs.height }];
     }
-    
-    return collided;
+
+    // 3. Check for intersection between any player hitbox and any obstacle hitbox
+    for (const ph of playerHitboxes) {
+        for (const oh of obsHitboxes) {
+            if (rectIntersect(ph, oh)) return true;
+        }
+    }
+
+    return false;
 }
 
 function die() {
