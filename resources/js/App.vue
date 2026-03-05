@@ -127,7 +127,7 @@ function backToLobby() {
 .app-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    min-height: 100vh;
     background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
 }
 

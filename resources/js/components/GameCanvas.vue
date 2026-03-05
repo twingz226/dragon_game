@@ -1032,10 +1032,17 @@ function drawRestartConfirmation() {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.player_info .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .player-info {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    overflow: hidden; /* Ensure container respects children overflow */
 }
 
 .high-score {

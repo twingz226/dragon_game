@@ -47,8 +47,10 @@ function formatDate(dateStr) {
     border: 1px solid rgba(14, 165, 233, 0.2);
     border-radius: 0.5rem;
     padding: 0.75rem;
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
 }
 
 h3 {
@@ -85,6 +87,9 @@ h3 {
 .name {
     flex: 1;
     margin-left: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .val {

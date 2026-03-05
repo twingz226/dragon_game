@@ -25,10 +25,10 @@
             background-color: #0f172a;
             color: #f8fafc;
             font-family: 'Orbitron', sans-serif;
-            overflow: hidden;
+            min-height: 100vh;
         }
         #app {
-            height: 100vh;
+            min-height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
