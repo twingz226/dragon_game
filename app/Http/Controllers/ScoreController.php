@@ -23,7 +23,9 @@ class ScoreController extends Controller
 
     public function leaderboard()
     {
-        $scores = Score::select('player_name', 'score', 'created_at')
+        $scores = Score::select('player_name')
+            ->selectRaw('MAX(score) as score')
+            ->groupBy('player_name')
             ->orderByDesc('score')
             ->limit(10)
             ->get();
