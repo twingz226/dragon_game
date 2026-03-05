@@ -418,8 +418,8 @@ function spawnObstacle() {
         const colorIdx = Math.floor(nextRandom() * BIRD_COLORS.length);
         obstacles.value.push({
             x: canvasWidth.value,
-            width: 50,
-            height: 35,
+            width: 38,
+            height: 30,
             y: birdHeight,
             type: 'bird',
             wingPhase: 0,
@@ -622,54 +622,55 @@ function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
     
     c.save();
     
-    // Scale bird to fit approx 50x35 bounding box
-    // Original drawing was based on approx 35x25
-    const scale = 50 / 35;
+    // Scale bird to fit precisely in 38x30 bounding box
+    // Base visual width is 27 (from tail 0 to beak 27)
+    // Scale = 38 / 27 ≈ 1.4
+    const scale = 38 / 27;
     c.translate(x, y);
     c.scale(scale, scale);
     c.translate(-x, -y);
     
-    // Bird body
+    // Bird body (shifted left by 10)
     c.fillStyle = colors.main;
-    c.fillRect(x + 10, y + 8, 15, 10);
+    c.fillRect(x + 0, y + 8, 15, 10);
     
-    // Bird head
-    c.fillRect(x + 22, y + 6, 8, 8);
+    // Bird head (shifted left by 10)
+    c.fillRect(x + 12, y + 6, 8, 8);
     
-    // Beak
+    // Beak (shifted left by 10)
     c.fillStyle = colors.beak;
-    c.fillRect(x + 28, y + 8, 4, 2);
+    c.fillRect(x + 18, y + 8, 4, 2);
     
-    // Eye
+    // Eye (shifted left by 10)
     c.fillStyle = '#000000';
-    c.fillRect(x + 24, y + 7, 1, 1);
+    c.fillRect(x + 14, y + 7, 1, 1);
     
     // Animated wings
     const wingOffset = Math.sin(wingPhase) * 8;
     c.fillStyle = colors.wing;
 
-    // Upper wing
+    // Upper wing (shifted left by 10)
     c.beginPath();
-    c.moveTo(x + 12, y + 10);
-    c.lineTo(x + 5, y + 5 - wingOffset);
-    c.lineTo(x + 8, y + 12);
+    c.moveTo(x + 2, y + 10);
+    c.lineTo(x - 5, y + 5 - wingOffset);
+    c.lineTo(x - 2, y + 12);
     c.closePath();
     c.fill();
     
-    // Lower wing
+    // Lower wing (shifted left by 10)
     c.beginPath();
-    c.moveTo(x + 12, y + 12);
-    c.lineTo(x + 5, y + 17 + wingOffset);
-    c.lineTo(x + 8, y + 14);
+    c.moveTo(x + 2, y + 12);
+    c.lineTo(x - 5, y + 17 + wingOffset);
+    c.lineTo(x - 2, y + 14);
     c.closePath();
     c.fill();
     
-    // Tail
-    c.fillStyle = colors.wing; // matching wing color
+    // Tail (shifted left by 10, relative to tail-start at x)
+    c.fillStyle = colors.wing; 
     c.beginPath();
-    c.moveTo(x + 10, y + 13);
-    c.lineTo(x + 5, y + 11);
-    c.lineTo(x + 5, y + 15);
+    c.moveTo(x + 0, y + 13);
+    c.lineTo(x - 5, y + 11);
+    c.lineTo(x - 5, y + 15);
     c.closePath();
     c.fill();
     
