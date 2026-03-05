@@ -91,19 +91,37 @@ function setupEcho() {
         .here((users) => {
             users.forEach(user => {
                 if (user.id !== props.playerId) {
-                    remotePlayers.value[user.id] = { y: groundY.value - DINO_HEIGHT, isDead: false, name: user.name, wingPhase: 0 };
+                    remotePlayers.value[user.id] = { 
+                        y: groundY.value - DINO_HEIGHT, 
+                        vy: 0, 
+                        onGround: true, 
+                        isDead: false, 
+                        name: user.name, 
+                        wingPhase: 0 
+                    };
                 }
             });
         })
         .joining((user) => {
-            remotePlayers.value[user.id] = { y: groundY.value - DINO_HEIGHT, isDead: false, name: user.name, wingPhase: 0 };
+            remotePlayers.value[user.id] = { 
+                y: groundY.value - DINO_HEIGHT, 
+                vy: 0, 
+                onGround: true, 
+                isDead: false, 
+                name: user.name, 
+                wingPhase: 0 
+            };
         })
         .leaving((user) => {
             delete remotePlayers.value[user.id];
         })
         .listenForWhisper('jump', (e) => {
             if (remotePlayers.value[e.playerId]) {
-                remotePlayers.value[e.playerId].y = e.y;
+                const p = remotePlayers.value[e.playerId];
+                p.vy = JUMP_FORCE;
+                p.onGround = false;
+                // Sync position to avoid drift
+                p.y = e.y;
             }
         })
         .listenForWhisper('player-died', (e) => {
@@ -162,9 +180,12 @@ function restartGame() {
     
     // Reset remote players
     Object.keys(remotePlayers.value).forEach(playerId => {
-        remotePlayers.value[playerId].isDead = false;
-        remotePlayers.value[playerId].y = groundY.value - DINO_HEIGHT;
-        delete remotePlayers.value[playerId].finalScore;
+        const p = remotePlayers.value[playerId];
+        p.isDead = false;
+        p.y = groundY.value - DINO_HEIGHT;
+        p.vy = 0;
+        p.onGround = true;
+        delete p.finalScore;
     });
     
     // Broadcast respawn
@@ -235,10 +256,21 @@ function update(dt) {
     const flapSpeed = localPlayer.onGround ? (10 * speedMultiplier) : (25 * speedMultiplier);
     localPlayer.wingPhase = (localPlayer.wingPhase + dt * flapSpeed) % (Math.PI * 2);
 
-    // Update remote player wing animations
+    // Update remote player wing animations and physics
     Object.values(remotePlayers.value).forEach(p => {
         if (!p.isDead) {
-            // We don't perfectly know if they're jumping, but we can animate them
+            // Apply gravity to remote players if they are in the air
+            if (!p.onGround) {
+                p.vy += GRAVITY * dt;
+                p.y += p.vy * dt;
+
+                if (p.y > groundY.value - DINO_HEIGHT) {
+                    p.y = groundY.value - DINO_HEIGHT;
+                    p.vy = 0;
+                    p.onGround = true;
+                }
+            }
+
             p.wingPhase = (p.wingPhase || 0) + dt * 15;
             p.wingPhase %= (Math.PI * 2);
         }
