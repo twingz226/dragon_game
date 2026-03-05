@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
 
-const props = defineProps(['roomCode', 'playerId', 'playerName', 'isHost']);
+const props = defineProps(['roomCode', 'playerId', 'playerName', 'isHost', 'obstacleSeed']);
 const emit = defineEmits(['gameStarted', 'back']);
 
 const players = ref([]);
@@ -57,7 +57,7 @@ async function startGame() {
             emit('gameStarted', {
                 room_code: props.roomCode,
                 is_host: props.isHost,
-                obstacle_seed: Math.floor(Math.random() * 999999999)
+                obstacle_seed: props.obstacleSeed || Math.floor(Math.random() * 999999999)
             });
         }, 3000);
 
@@ -97,7 +97,7 @@ onMounted(() => {
             const id = user.id ?? user.player_id;
             players.value = players.value.filter(p => p.id !== id);
         })
-        .listen('game.started', (e) => {
+        .listen('.game.started', (e) => {
             console.log('=== GAME STARTED EVENT RECEIVED ===', e);
 
             if (gameStartTimeout.value) {

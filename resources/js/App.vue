@@ -101,6 +101,7 @@ function backToLobby() {
                 :playerId="playerId"
                 :playerName="playerName"
                 :isHost="roomData.is_host"
+                :obstacleSeed="roomData.obstacle_seed"
                 @game-started="handleGameStarted"
                 @back="backToLobby"
             />
