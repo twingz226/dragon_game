@@ -408,13 +408,14 @@ function spawnObstacle() {
         const colorIdx = Math.floor(nextRandom() * BIRD_COLORS.length);
         obstacles.value.push({
             x: canvasWidth.value,
-            width: 35,
-            height: 25,
+            width: 50,
+            height: 35,
             y: birdHeight,
             type: 'bird',
             wingPhase: 0,
             colors: BIRD_COLORS[colorIdx]
         });
+
 
     } else {
         // Ground cacti obstacles
@@ -609,6 +610,15 @@ function draw() {
 function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
     const c = ctx.value;
     
+    c.save();
+    
+    // Scale bird to fit approx 50x35 bounding box
+    // Original drawing was based on approx 35x25
+    const scale = 50 / 35;
+    c.translate(x, y);
+    c.scale(scale, scale);
+    c.translate(-x, -y);
+    
     // Bird body
     c.fillStyle = colors.main;
     c.fillRect(x + 10, y + 8, 15, 10);
@@ -628,7 +638,6 @@ function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
     const wingOffset = Math.sin(wingPhase) * 8;
     c.fillStyle = colors.wing;
 
-    
     // Upper wing
     c.beginPath();
     c.moveTo(x + 12, y + 10);
@@ -646,14 +655,17 @@ function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
     c.fill();
     
     // Tail
-    c.fillStyle = '#f59e0b';
+    c.fillStyle = colors.wing; // matching wing color
     c.beginPath();
     c.moveTo(x + 10, y + 13);
     c.lineTo(x + 5, y + 11);
     c.lineTo(x + 5, y + 15);
     c.closePath();
     c.fill();
+    
+    c.restore();
 }
+
 
 function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     const c = ctx.value;
