@@ -683,48 +683,54 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     
     c.save();
     
-    // Scale drawing proportionally based on original 44x44 size
-    const scaleX = DINO_WIDTH / 44;
-    const scaleY = DINO_HEIGHT / 44;
+    // Total visual width: 54 units (from tail tip -12 to snout tip 42)
+    // Total visual height: 50 units (from wing tip -14 to leg bottom 36)
+    // We scale to fill the DINO_WIDTH x DINO_HEIGHT box (66x66)
+    const scaleX = DINO_WIDTH / 54;
+    const scaleY = DINO_HEIGHT / 50;
     
     c.translate(x, y);
     c.scale(scaleX, scaleY);
     c.translate(-x, -y);
     
-    // T-Rex body parts
-    c.fillStyle = color;
+    // Apply internal shift (+12, +14) to all components to make the tail start at 0
+    const ox = 12;
+    const oy = 14;
     
-    // Main body (larger rectangle)
+    // Main body
     c.beginPath();
     if (c.roundRect) {
-        c.roundRect(x + 8, y + 12, 24, 20, 3);
+        c.roundRect(x + 8 + ox, y + 12 + oy, 24, 20, 3);
     } else {
-        c.rect(x + 8, y + 12, 24, 20);
+        c.rect(x + 8 + ox, y + 12 + oy, 24, 20);
     }
     c.fill();
     
     // Head (rectangular with snout)
     c.beginPath();
     if (c.roundRect) {
-        c.roundRect(x + 24, y + 4, 16, 14, 2);
+        c.roundRect(x + 24 + ox, y + 4 + oy, 16, 14, 2);
     } else {
-        c.rect(x + 24, y + 4, 16, 14);
+        c.rect(x + 24 + ox, y + 4 + oy, 16, 14);
     }
     c.fill();
     
     // Snout extension
-    c.fillRect(x + 36, y + 8, 6, 6);
+    c.fillRect(x + 36 + ox, y + 8 + oy, 6, 6);
     
+    // T-Rex body color
+    c.fillStyle = color;
+
     // Dragon Tail Animation
     const tailSwing = Math.sin(wingPhase) * 6; // swish horizontally/vertically
     
     // Dragon Tail (longer, spiky)
     c.beginPath();
-    c.moveTo(x + 8, y + 22);
-    c.lineTo(x - 4, y + 16 + tailSwing/2);
-    c.lineTo(x - 12 - Math.abs(tailSwing), y + 10 + tailSwing);
-    c.lineTo(x - 8, y + 22 + tailSwing/2);
-    c.lineTo(x + 4, y + 28);
+    c.moveTo(x + 8 + ox, y + 22 + oy);
+    c.lineTo(x - 4 + ox, y + 16 + oy + tailSwing/2);
+    c.lineTo(x - 12 + ox - Math.abs(tailSwing), y + 10 + oy + tailSwing);
+    c.lineTo(x - 8 + ox, y + 22 + oy + tailSwing/2);
+    c.lineTo(x + 4 + ox, y + 28 + oy);
     c.closePath();
     c.fill();
 
@@ -736,28 +742,28 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     // Draw the far wing (darker)
     c.fillStyle = isLocal ? '#0284c7' : '#334155'; // darker shade of the color
     c.beginPath();
-    c.moveTo(x + 16, y + 14); // base
-    c.lineTo(x + 8, y + 2 - flapOffset/2); // joint 1
-    c.lineTo(x - spreadOffset, y - 10 - flapOffset); // tip
-    c.lineTo(x + 12, y - 6 - flapOffset*0.8); // middle outer
-    c.lineTo(x + 20 + spreadOffset, y - 14 - flapOffset*1.2); // second tip
-    c.lineTo(x + 24, y - 2 - flapOffset/2); // lower inner
-    c.lineTo(x + 32 + spreadOffset, y - 6 - flapOffset); // third tip
-    c.lineTo(x + 26, y + 12); // back to body
+    c.moveTo(x + 16 + ox, y + 14 + oy); // base
+    c.lineTo(x + 8 + ox, y + 2 + oy - flapOffset/2); // joint 1
+    c.lineTo(x + ox - spreadOffset, y + oy - 10 - flapOffset); // tip
+    c.lineTo(x + 12 + ox, y + oy - 6 - flapOffset*0.8); // middle outer
+    c.lineTo(x + 20 + ox + spreadOffset, y + oy - 14 - flapOffset*1.2); // second tip
+    c.lineTo(x + 24 + ox, y + oy - 2 - flapOffset/2); // lower inner
+    c.lineTo(x + 32 + ox + spreadOffset, y + oy - 6 - flapOffset); // third tip
+    c.lineTo(x + 26 + ox, y + 12 + oy); // back to body
     c.closePath();
     c.fill();
     
     // Draw the near wing (lighter)
     c.fillStyle = color;
     c.beginPath();
-    c.moveTo(x + 12, y + 16); // base
-    c.lineTo(x + 2, y + 4 - flapOffset/2); // joint 1
-    c.lineTo(x - 8 - spreadOffset, y - 8 - flapOffset); // tip
-    c.lineTo(x + 6, y - 4 - flapOffset*0.8); // middle outer
-    c.lineTo(x + 14 + spreadOffset/2, y - 12 - flapOffset*1.2); // second tip
-    c.lineTo(x + 18, y - flapOffset/2); // lower inner
-    c.lineTo(x + 26 + spreadOffset, y - 4 - flapOffset); // third tip
-    c.lineTo(x + 20, y + 14); // back to body
+    c.moveTo(x + 12 + ox, y + 16 + oy); // base
+    c.lineTo(x + 2 + ox, y + 4 + oy - flapOffset/2); // joint 1
+    c.lineTo(x + ox - 8 - spreadOffset, y + oy - 8 - flapOffset); // tip
+    c.lineTo(x + 6 + ox, y + oy - 4 - flapOffset*0.8); // middle outer
+    c.lineTo(x + 14 + ox + spreadOffset/2, y + oy - 12 - flapOffset*1.2); // second tip
+    c.lineTo(x + 18 + ox, y + oy - flapOffset/2); // lower inner
+    c.lineTo(x + 26 + ox + spreadOffset, y + oy - 4 - flapOffset); // third tip
+    c.lineTo(x + 20 + ox, y + 14 + oy); // back to body
     c.closePath();
     c.fill();
     
@@ -766,18 +772,18 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     c.lineWidth = 1;
     // Main bone
     c.beginPath();
-    c.moveTo(x + 12, y + 16);
-    c.lineTo(x + 2, y + 4 - flapOffset/2);
-    c.lineTo(x - 8 - spreadOffset, y - 8 - flapOffset);
+    c.moveTo(x + 12 + ox, y + 16 + oy);
+    c.lineTo(x + 2 + ox, y + 4 + oy - flapOffset/2);
+    c.lineTo(x + ox - 8 - spreadOffset, y + oy - 8 - flapOffset);
     c.stroke();
     // Inner bones
     c.beginPath();
-    c.moveTo(x + 2, y + 4 - flapOffset/2);
-    c.lineTo(x + 14 + spreadOffset/2, y - 12 - flapOffset*1.2);
+    c.moveTo(x + 2 + ox, y + 4 + oy - flapOffset/2);
+    c.lineTo(x + 14 + ox + spreadOffset/2, y + oy - 12 - flapOffset*1.2);
     c.stroke();
     c.beginPath();
-    c.moveTo(x + 2, y + 4 - flapOffset/2);
-    c.lineTo(x + 26 + spreadOffset, y - 4 - flapOffset);
+    c.moveTo(x + 2 + ox, y + 4 + oy - flapOffset/2);
+    c.lineTo(x + 26 + ox + spreadOffset, y + oy - 4 - flapOffset);
     c.stroke();
     // Limb Animation
     // We can use the wingPhase for walking as well, but scale it differently
@@ -787,28 +793,28 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     // Legs (thick)
     // Draw far leg first (darker)
     c.fillStyle = isLocal ? '#0284c7' : '#334155';
-    c.fillRect(x + 22 + walkSwing2, y + 28, 6, 8);
+    c.fillRect(x + 22 + ox + walkSwing2, y + 28 + oy, 6, 8);
     // Draw near leg
     c.fillStyle = color;
-    c.fillRect(x + 12 + walkSwing1, y + 28, 6, 8);
+    c.fillRect(x + 12 + ox + walkSwing1, y + 28 + oy, 6, 8);
     
     // Small arms
     // Draw far arm
     c.fillStyle = isLocal ? '#0284c7' : '#334155';
-    c.fillRect(x + 20 + walkSwing2, y + 18, 4, 4);
+    c.fillRect(x + 20 + ox + walkSwing2, y + 18 + oy, 4, 4);
     // Draw near arm
     c.fillStyle = color;
-    c.fillRect(x + 16 + walkSwing1, y + 18, 4, 4);
+    c.fillRect(x + 16 + ox + walkSwing1, y + 18 + oy, 4, 4);
     
     // Eye (more menacing)
     c.fillStyle = '#ffffff';
-    c.fillRect(x + 32, y + 8, 3, 3);
+    c.fillRect(x + 32 + ox, y + 8 + oy, 3, 3);
     c.fillStyle = '#000000';
-    c.fillRect(x + 33, y + 9, 1, 1);
+    c.fillRect(x + 33 + ox, y + 9 + oy, 1, 1);
     
     // Nostril
     c.fillStyle = '#000000';
-    c.fillRect(x + 38, y + 10, 1, 1);
+    c.fillRect(x + 38 + ox, y + 10 + oy, 1, 1);
     
     // Teeth (small triangles)
     c.fillStyle = '#ffffff';
