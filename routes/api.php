@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/scores', [ScoreController::class, 'store']);
 Route::get('/leaderboard', [ScoreController::class, 'leaderboard']);
+Route::post('/personal-high-scores', [ScoreController::class, 'getPersonalHighScores']);
 
 Route::post('/rooms/join', [GameRoomController::class, 'join']);
 Route::get('/rooms/{code}', [GameRoomController::class, 'show']);

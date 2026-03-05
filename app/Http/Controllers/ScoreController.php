@@ -30,4 +30,21 @@ class ScoreController extends Controller
 
         return response()->json($scores);
     }
+
+    public function getPersonalHighScores(Request $request)
+    {
+        $request->validate([
+            'player_ids' => 'required|array',
+            'player_ids.*' => 'string|max:36'
+        ]);
+
+        $highScores = Score::selectRaw('player_id, MAX(score) as high_score')
+            ->whereIn('player_id', $request->player_ids)
+            ->groupBy('player_id')
+            ->get()
+            ->pluck('high_score', 'player_id');
+
+        return response()->json($highScores);
+    }
 }
+

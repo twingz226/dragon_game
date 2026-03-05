@@ -21,6 +21,15 @@ const DINO_WIDTH = 66; // Increased from 44
 const DINO_HEIGHT = 66; // Increased from 44
 const INITIAL_SPEED = 400;
 const SPEED_INCREMENT = 0.1;
+const BIRD_COLORS = [
+    { main: '#fbbf24', wing: '#f59e0b', beak: '#f97316' }, // Yellow
+    { main: '#f43f5e', wing: '#e11d48', beak: '#fb7185' }, // Rose/Red
+    { main: '#8b5cf6', wing: '#7c3aed', beak: '#a78bfa' }, // violet
+    { main: '#06b6d4', wing: '#0891b2', beak: '#22d3ee' }, // Cyan
+    { main: '#10b981', wing: '#059669', beak: '#34d399' }, // Emerald/Green
+    { main: '#f97316', wing: '#ea580c', beak: '#fdba74' }, // Orange
+];
+
 
 // --- State ---
 const canvasRef = ref(null);
@@ -49,6 +58,8 @@ const obstacles = ref([]);
 const champion = ref(null);
 const scoreboardKey = ref(0);
 const showRestartConfirm = ref(false);
+const playerHighScores = ref({}); // { playerId: score }
+
 
 
 
@@ -105,6 +116,7 @@ function setupEcho() {
                     };
                 }
             });
+            fetchHighScores();
         })
         .joining((user) => {
             remotePlayers.value[user.id] = { 
@@ -115,7 +127,9 @@ function setupEcho() {
                 name: user.name, 
                 wingPhase: 0 
             };
+            fetchHighScores();
         })
+
         .leaving((user) => {
             delete remotePlayers.value[user.id];
         })
@@ -141,7 +155,21 @@ function setupEcho() {
                 remotePlayers.value[e.playerId].y = groundY.value - DINO_HEIGHT;
             }
         });
+    
+    fetchHighScores();
 }
+
+
+async function fetchHighScores() {
+    const ids = [props.playerId, ...Object.keys(remotePlayers.value)];
+    try {
+        const response = await axios.post('/api/personal-high-scores', { player_ids: ids });
+        playerHighScores.value = response.data;
+    } catch (e) {
+        console.error("Failed to fetch high scores", e);
+    }
+}
+
 
 function handleKeyDown(e) {
     console.log('Key pressed:', e.code, 'gameEnded:', gameEnded.value, 'localPlayer.isDead:', localPlayer.isDead, 'localPlayer.onGround:', localPlayer.onGround);
@@ -375,14 +403,17 @@ function spawnObstacle() {
     if (type === 'bird') {
         // Flying bird obstacle
         const birdHeight = 120 + nextRandom() * 80; // Random height between 120-200
+        const colorIdx = Math.floor(nextRandom() * BIRD_COLORS.length);
         obstacles.value.push({
             x: canvasWidth.value,
             width: 35,
             height: 25,
             y: birdHeight,
             type: 'bird',
-            wingPhase: 0
+            wingPhase: 0,
+            colors: BIRD_COLORS[colorIdx]
         });
+
     } else {
         // Ground cacti obstacles
         obstacles.value.push({
@@ -515,8 +546,9 @@ function draw() {
     obstacles.value.forEach(obs => {
         if (obs.type === 'bird') {
             // Draw flying bird
-            drawBird(obs.x, obs.y, obs.wingPhase);
+            drawBird(obs.x, obs.y, obs.wingPhase, obs.colors);
         } else {
+
             // Draw ground cacti
             c.fillStyle = '#e2e8f0';
             c.beginPath();
@@ -572,18 +604,18 @@ function draw() {
 }
 
 
-function drawBird(x, y, wingPhase) {
+function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
     const c = ctx.value;
     
     // Bird body
-    c.fillStyle = '#fbbf24';
+    c.fillStyle = colors.main;
     c.fillRect(x + 10, y + 8, 15, 10);
     
     // Bird head
     c.fillRect(x + 22, y + 6, 8, 8);
     
     // Beak
-    c.fillStyle = '#f97316';
+    c.fillStyle = colors.beak;
     c.fillRect(x + 28, y + 8, 4, 2);
     
     // Eye
@@ -592,7 +624,8 @@ function drawBird(x, y, wingPhase) {
     
     // Animated wings
     const wingOffset = Math.sin(wingPhase) * 8;
-    c.fillStyle = '#f59e0b';
+    c.fillStyle = colors.wing;
+
     
     // Upper wing
     c.beginPath();
@@ -895,19 +928,25 @@ function drawRestartConfirmation() {
         <div class="player-list">
             <h3>PLAYERS</h3>
             <div v-for="(p, id) in remotePlayers" :key="id" class="player-item" :class="{ dead: p.isDead }">
-                <span class="status-dot"></span>
-                {{ p.name }}
+                <div class="player-info">
+                    <span class="status-dot"></span>
+                    <span class="name">{{ p.name }}</span>
+                </div>
+                <div class="high-score" v-if="playerHighScores[id]">HI: {{ playerHighScores[id].toLocaleString() }}</div>
             </div>
             <div class="player-item self">
-                 <span class="status-dot"></span>
-                 {{ playerName }} (YOU)
+                <div class="player-info">
+                    <span class="status-dot"></span>
+                    <span class="name">{{ playerName }} (YOU)</span>
+                </div>
+                <div class="high-score" v-if="playerHighScores[playerId]">HI: {{ playerHighScores[playerId].toLocaleString() }}</div>
             </div>
 
             <div class="scoreboard-wrapper">
                 <Scoreboard :key="scoreboardKey" />
             </div>
-
         </div>
+
 
         
         <div class="canvas-wrapper">
@@ -962,12 +1001,27 @@ function drawRestartConfirmation() {
 
 .player-item {
     font-size: 0.8rem;
-    padding: 0.5rem 0;
+    padding: 0.6rem 0;
     color: #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.player-info {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
+
+.high-score {
+    font-size: 0.6rem;
+    font-family: 'Press Start 2P', cursive;
+    color: #fbbf24;
+    margin-left: 1.1rem;
+}
+
 
 .status-dot {
     width: 6px;
