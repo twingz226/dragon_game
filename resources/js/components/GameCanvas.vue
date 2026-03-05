@@ -738,9 +738,20 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     const flapOffset = Math.sin(wingPhase) * 12; // vertical flap
     const spreadOffset = Math.cos(wingPhase) * 4; // horizontal spread
 
-    // Dragon Wings (Enhanced)
-    // Draw the far wing (darker)
-    c.fillStyle = isLocal ? '#0284c7' : '#334155'; // darker shade of the color
+    // Dragon Wings (Enhanced "Ibon Adarna" Style)
+    // Define Adarna Gradient for wings
+    const adarnaGradient = c.createLinearGradient(x + ox - 10, y + oy - 15, x + ox + 30, y + oy + 15);
+    adarnaGradient.addColorStop(0, '#ffd700'); // Gold
+    adarnaGradient.addColorStop(0.2, '#ff4500'); // OrangeRed
+    adarnaGradient.addColorStop(0.4, '#dc143c'); // Crimson
+    adarnaGradient.addColorStop(0.6, '#0000ff'); // Blue
+    adarnaGradient.addColorStop(0.8, '#008000'); // Green
+    adarnaGradient.addColorStop(1, '#8b00ff'); // Violet
+
+    // Draw the far wing (darker overlay)
+    c.fillStyle = adarnaGradient;
+    c.save();
+    c.globalAlpha = 0.7; // Make the far wing slightly more transparent/darker
     c.beginPath();
     c.moveTo(x + 16 + ox, y + 14 + oy); // base
     c.lineTo(x + 8 + ox, y + 2 + oy - flapOffset/2); // joint 1
@@ -752,9 +763,10 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     c.lineTo(x + 26 + ox, y + 12 + oy); // back to body
     c.closePath();
     c.fill();
+    c.restore();
     
-    // Draw the near wing (lighter)
-    c.fillStyle = color;
+    // Draw the near wing (vibrant Adarna colors)
+    c.fillStyle = adarnaGradient;
     c.beginPath();
     c.moveTo(x + 12 + ox, y + 16 + oy); // base
     c.lineTo(x + 2 + ox, y + 4 + oy - flapOffset/2); // joint 1
@@ -868,7 +880,7 @@ function drawGameOver() {
         c.fillText(`SCORE: ${champion.value.score}`, canvasWidth.value/2, canvasHeight.value/2 + 30);
         
         c.font = `${textSize} "Orbitron"`;
-        c.fillStyle = '#94a3b8';
+        c.fillStyle = '#cbd5e1';
         c.fillText('SPACE TO PLAY AGAIN • ESC TO LOBBY', canvasWidth.value/2, canvasHeight.value/2 + 70);
     } else if (localPlayer.isDead && !gameEnded.value) {
         // Waiting for other players
@@ -882,7 +894,7 @@ function drawGameOver() {
         c.fillText(`FINAL SCORE: ${Math.floor(gameState.score)}`, canvasWidth.value/2, canvasHeight.value/2 + 10);
         
         c.font = `${textSize} "Orbitron"`;
-        c.fillStyle = '#94a3b8';
+        c.fillStyle = '#cbd5e1';
         c.fillText('WAITING FOR OTHER PLAYERS...', canvasWidth.value/2, canvasHeight.value/2 + 50);
     } else {
         // Regular game over for single player
@@ -896,7 +908,7 @@ function drawGameOver() {
         c.fillText(`FINAL SCORE: ${Math.floor(gameState.score)}`, canvasWidth.value/2, canvasHeight.value/2 + 30);
         
         c.font = `${textSize} "Orbitron"`;
-        c.fillStyle = '#94a3b8';
+        c.fillStyle = '#cbd5e1';
         c.fillText('SPACE TO RESTART • ESC TO LOBBY', canvasWidth.value/2, canvasHeight.value/2 + 70);
     }
 }
@@ -947,7 +959,7 @@ function drawRestartConfirmation() {
     c.textAlign = 'center';
     c.fillText('RESTART GAME?', canvasWidth.value / 2, y + 85);
     
-    c.fillStyle = '#94a3b8';
+    c.fillStyle = '#cbd5e1';
     c.font = `${isMobileView ? '8px' : '11px'} "Orbitron"`;
     c.fillText(isMobileView ? 'TAP AGAIN TO CONFIRM' : 'PRESS SPACE TO CONFIRM • ESC TO CANCEL', canvasWidth.value / 2, y + 115);
 }
@@ -1117,7 +1129,7 @@ canvas {
     right: 0;
     text-align: center;
     font-size: 0.6rem;
-    color: #475569;
+    color: #f8fafc;
     letter-spacing: 1px;
     padding: 0 1rem;
 }
