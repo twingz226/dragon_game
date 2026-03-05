@@ -638,7 +638,7 @@ function draw() {
     });
 
     // Local Player
-    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#38bdf8', props.playerName, true, localPlayer.wingPhase);
+    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#bae6fd', props.playerName, true, localPlayer.wingPhase, localPlayer.onGround);
 
     // Remote Players with spacing
     const playerSpacing = 60; // Horizontal spacing between players
@@ -646,7 +646,7 @@ function draw() {
     
     Object.values(remotePlayers.value).forEach(p => {
         const offsetX = canvasWidth.value/4 + ((playerIndex + 1) * playerSpacing);
-        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false, p.wingPhase || 0);
+        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false, p.wingPhase || 0, p.onGround ?? true);
         playerIndex++;
     });
     
@@ -738,7 +738,7 @@ function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
 }
 
 
-function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
+function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
     const c = ctx.value;
     
     c.save();
@@ -757,6 +757,9 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     const ox = 12;
     const oy = 14;
     
+    // T-Rex body color
+    c.fillStyle = color;
+
     // Main body
     c.beginPath();
     if (c.roundRect) {
@@ -777,9 +780,7 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     
     // Snout extension
     c.fillRect(x + 36 + ox, y + 8 + oy, 6, 6);
-    
-    // T-Rex body color
-    c.fillStyle = color;
+
 
     // Dragon Tail Animation
     const tailSwing = Math.sin(wingPhase) * 6; // swish horizontally/vertically
@@ -859,16 +860,34 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0) {
     c.stroke();
     // Limb Animation
     // We can use the wingPhase for walking as well, but scale it differently
-    const walkSwing1 = Math.sin(wingPhase) * 4; // Right leg/arm
-    const walkSwing2 = Math.cos(wingPhase) * 4; // Left leg/arm
+    const walkSwing1 = onGround ? Math.sin(wingPhase) * 4 : 0; // Right leg/arm
+    const walkSwing2 = onGround ? Math.cos(wingPhase) * 4 : 0; // Left leg/arm
     
-    // Legs (thick)
-    // Draw far leg first (darker)
-    c.fillStyle = isLocal ? '#0284c7' : '#334155';
-    c.fillRect(x + 22 + ox + walkSwing2, y + 28 + oy, 6, 8);
+    // Enhanced Dragon Legs
+    const drawLeg = (lx, ly, isFar, swing) => {
+        const legColor = isFar ? (isLocal ? '#0284c7' : '#334155') : color;
+        c.fillStyle = legColor;
+        
+        // Thigh
+        c.fillRect(lx + swing/2, ly, 8, 5);
+        
+        // Shin (angled more by swing)
+        c.fillRect(lx + swing, ly + 5, 6, 6);
+        
+        // Foot
+        c.fillRect(lx + swing - 2, ly + 10, 10, 3);
+        
+        // Claws (small white details)
+        c.fillStyle = '#ffffff';
+        c.fillRect(lx + swing + 4, ly + 11, 2, 1);
+        c.fillRect(lx + swing + 7, ly + 11, 2, 1);
+    };
+
+    // Draw far leg first
+    drawLeg(x + 22 + ox, y + 26 + oy, true, walkSwing2);
     // Draw near leg
-    c.fillStyle = color;
-    c.fillRect(x + 12 + ox + walkSwing1, y + 28 + oy, 6, 8);
+    drawLeg(x + 12 + ox, y + 26 + oy, false, walkSwing1);
+
     
     // Small arms
     // Draw far arm
