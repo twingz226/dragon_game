@@ -637,8 +637,8 @@ function draw() {
         }
     });
 
-    // Local Player
-    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#bae6fd', props.playerName, true, localPlayer.wingPhase, localPlayer.onGround);
+    // Local Player - Neon Blue Gradient Base
+    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#0ea5e9', props.playerName, true, localPlayer.wingPhase, localPlayer.onGround);
 
     // Remote Players with spacing
     const playerSpacing = 60; // Horizontal spacing between players
@@ -757,8 +757,11 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
     const ox = 12;
     const oy = 14;
     
-    // T-Rex body color
-    c.fillStyle = color;
+    // Dragon body gradient for depth
+    const bodyGradient = c.createLinearGradient(x + ox, y + oy, x + ox + 36, y + oy + 20);
+    bodyGradient.addColorStop(0, color);
+    bodyGradient.addColorStop(1, isLocal ? '#075985' : '#1e293b'); // Darker depth
+    c.fillStyle = bodyGradient;
 
     // Main body
     c.beginPath();
