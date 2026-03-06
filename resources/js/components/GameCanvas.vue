@@ -50,6 +50,7 @@ const gameState = reactive({
     score: 0,
     speed: INITIAL_SPEED,
     lastTime: 0,
+    gameTime: 0,
 });
 
 const localPlayer = reactive({
@@ -156,6 +157,7 @@ function restartGame() {
     console.log('=== RESTART GAME CALLED ===');
     showRestartConfirm.value = false;
     gameState.score = 0;
+    gameState.gameTime = 0;
 
     gameState.speed = INITIAL_SPEED;
     gameState.isRunning = true;
@@ -280,20 +282,23 @@ function update(dt) {
     gameState.speed += SPEED_INCREMENT;
     // Accumulate score as float to avoid precision loss every frame
     gameState.score += gameState.speed * dt * 0.1;
+    gameState.gameTime += dt;
 
     // Spawn obstacles based on seeded random
-    const lastObstacle = obstacles.value[obstacles.value.length - 1];
-    
-    // Increase distance slightly if score/speed threshold is reached
-    let minGap = 400;
-    let maxGapRange = 600;
-    if (gameState.score >= 2000 || gameState.speed >= 2000) {
-        minGap = 500;
-        maxGapRange = 750;
-    }
+    if (gameState.gameTime > 5) {
+        const lastObstacle = obstacles.value[obstacles.value.length - 1];
+        
+        // Increase distance slightly if score/speed threshold is reached
+        let minGap = 400;
+        let maxGapRange = 600;
+        if (gameState.score >= 2000 || gameState.speed >= 2000) {
+            minGap = 500;
+            maxGapRange = 750;
+        }
 
-    if (!lastObstacle || (canvasWidth.value - lastObstacle.x > minGap + nextRandom() * maxGapRange)) {
-        spawnObstacle();
+        if (!lastObstacle || (canvasWidth.value - lastObstacle.x > minGap + nextRandom() * maxGapRange)) {
+            spawnObstacle();
+        }
     }
 
     obstacles.value.forEach((obs, index) => {
