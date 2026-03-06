@@ -3,8 +3,7 @@ import { ref, onMounted, onUnmounted, reactive, watch } from 'vue';
 import axios from 'axios';
 import Scoreboard from './Scoreboard.vue';
 
-
-const props = defineProps(['roomCode', 'playerId', 'playerName', 'isHost', 'obstacleSeed']);
+const props = defineProps(['playerId', 'playerName', 'obstacleSeed']);
 const emit = defineEmits(['game-over', 'back']);
 
 // --- Game Constants ---
@@ -61,18 +60,14 @@ const localPlayer = reactive({
     wingPhase: 0,
 });
 
-const remotePlayers = ref({}); // { playerId: { y, isDead, name, score } }
 const obstacles = ref([]);
 const particles = ref([]);
 const gameEnded = ref(false);
-const champion = ref(null);
 const scoreboardKey = ref(0);
 const showRestartConfirm = ref(false);
-const playerHighScores = ref({}); // { playerId: score }
+const playerHighScore = ref(0);
 const headImage = new Image();
 headImage.src = '/images/head.jpg';
-
-
 
 
 // PRNG for synced obstacles
@@ -87,105 +82,34 @@ function mulberry32(a) {
 }
 let nextRandom = mulberry32(randomSeed);
 
-// --- WebSocket Setup ---
-let channel = null;
 
 onMounted(() => {
     ctx.value = canvasRef.value.getContext('2d');
-    setupEcho();
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
     window.addEventListener('touchstart', handleTouchStart);
     requestAnimationFrame(gameLoop);
     
-    // Start game automatically after a small delay for sync
+    fetchHighScore();
+    
+    // Start game automatically after a small delay
     setTimeout(() => {
         gameState.isRunning = true;
-    }, 1000);
+    }, 500);
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('resize', handleResize);
     window.removeEventListener('touchstart', handleTouchStart);
-    if (channel) {
-        window.Echo.leave(`game.room.${props.roomCode}`);
-    }
 });
 
-function setupEcho() {
-    channel = window.Echo.join(`game.room.${props.roomCode}`)
-        .here((users) => {
-            users.forEach(user => {
-                if (user.id !== props.playerId) {
-                    remotePlayers.value[user.id] = { 
-                        y: groundY.value - DINO_HEIGHT, 
-                        vy: 0, 
-                        onGround: true, 
-                        isDead: false, 
-                        name: user.name, 
-                        wingPhase: 0 
-                    };
-                }
-            });
-            fetchHighScores();
-        })
-        .joining((user) => {
-            remotePlayers.value[user.id] = { 
-                y: groundY.value - DINO_HEIGHT, 
-                vy: 0, 
-                onGround: true, 
-                isDead: false, 
-                name: user.name, 
-                wingPhase: 0 
-            };
-            fetchHighScores();
-        })
-
-        .leaving((user) => {
-            delete remotePlayers.value[user.id];
-        })
-        .listenForWhisper('jump', (e) => {
-            if (remotePlayers.value[e.playerId]) {
-                const p = remotePlayers.value[e.playerId];
-                p.vy = JUMP_FORCE;
-                p.onGround = false;
-                // Sync position to avoid drift
-                p.y = e.y;
-            }
-        })
-        .listenForWhisper('fast-fall', (e) => {
-            if (remotePlayers.value[e.playerId]) {
-                const p = remotePlayers.value[e.playerId];
-                p.vy = e.vy || 1200;
-                p.y = e.y;
-            }
-        })
-        .listenForWhisper('player-died', (e) => {
-            if (remotePlayers.value[e.playerId]) {
-                remotePlayers.value[e.playerId].isDead = true;
-                remotePlayers.value[e.playerId].finalScore = e.score;
-            }
-            checkAllPlayersDead();
-        })
-        .listenForWhisper('player-respawned', (e) => {
-            if (remotePlayers.value[e.playerId]) {
-                remotePlayers.value[e.playerId].isDead = false;
-                remotePlayers.value[e.playerId].y = groundY.value - DINO_HEIGHT;
-            }
-        });
-    
-    fetchHighScores();
-}
-
-
-async function fetchHighScores() {
-    const ids = [props.playerId, ...Object.keys(remotePlayers.value)];
+async function fetchHighScore() {
     try {
-        const response = await axios.post('/api/personal-high-scores', { player_ids: ids });
-        playerHighScores.value = response.data;
+        const response = await axios.post('/api/personal-high-scores', { player_ids: [props.playerId] });
+        playerHighScore.value = response.data[props.playerId] || 0;
     } catch (e) {
-        console.error("Failed to fetch high scores", e);
+        console.error("Failed to fetch high score", e);
     }
 }
 
@@ -245,23 +169,7 @@ function restartGame() {
     
     // Reset game state
     gameEnded.value = false;
-    champion.value = null;
     
-    // Reset remote players
-    Object.keys(remotePlayers.value).forEach(playerId => {
-        const p = remotePlayers.value[playerId];
-        p.isDead = false;
-        p.y = groundY.value - DINO_HEIGHT;
-        p.vy = 0;
-        p.onGround = true;
-        delete p.finalScore;
-    });
-    
-    // Broadcast respawn
-    channel.whisper('player-respawned', {
-        playerId: props.playerId
-    });
-
     // Refresh scoreboard
     scoreboardKey.value++;
     
@@ -272,23 +180,10 @@ function restartGame() {
 function jump() {
     localPlayer.vy = JUMP_FORCE;
     localPlayer.onGround = false;
-    
-    // Whisper to others
-    channel.whisper('jump', {
-        playerId: props.playerId,
-        y: localPlayer.y
-    });
 }
 
 function fastFall() {
     localPlayer.vy = 1200;
-    
-    // Whisper to others
-    channel.whisper('fast-fall', {
-        playerId: props.playerId,
-        y: localPlayer.y,
-        vy: localPlayer.vy
-    });
 }
 
 function handleResize() {
@@ -345,26 +240,6 @@ function update(dt) {
     const flapSpeed = localPlayer.onGround ? (10 * speedMultiplier) : (25 * speedMultiplier);
     localPlayer.wingPhase = (localPlayer.wingPhase + dt * flapSpeed) % (Math.PI * 2);
 
-    // Update remote player wing animations and physics
-    Object.values(remotePlayers.value).forEach(p => {
-        if (!p.isDead) {
-            // Apply gravity to remote players if they are in the air
-            if (!p.onGround) {
-                p.vy += GRAVITY * dt;
-                p.y += p.vy * dt;
-
-                if (p.y > groundY.value - DINO_HEIGHT) {
-                    p.y = groundY.value - DINO_HEIGHT;
-                    p.vy = 0;
-                    p.onGround = true;
-                }
-            }
-
-            p.wingPhase = (p.wingPhase || 0) + dt * 15;
-            p.wingPhase %= (Math.PI * 2);
-        }
-    });
-    
     if (isNaN(localPlayer.y)) {
         console.error("localPlayer.y is NaN!", { vy: localPlayer.vy, dt, GRAVITY });
     }
@@ -410,18 +285,6 @@ function update(dt) {
             console.log("Collision detected with obstacle:", obs);
             die();
         }
-        
-        // Collision detection for remote players
-        const playerSpacing = 60;
-        let playerIndex = 0;
-        Object.values(remotePlayers.value).forEach(p => {
-            const offsetX = canvasWidth.value/4 + ((playerIndex + 1) * playerSpacing);
-            if (!p.isDead && checkCollision(p, obs, offsetX)) {
-                console.log(`Remote player ${p.name} collided with obstacle:`, obs);
-                // Remote player collision is handled by their own game instance
-            }
-            playerIndex++;
-        });
     });
 
     // Remove off-screen obstacles
@@ -591,54 +454,14 @@ function die() {
         });
     }
 
-    // Broadcast death with score
-    channel.whisper('player-died', {
-        playerId: props.playerId,
-        score: Math.floor(gameState.score)
-    });
-
     // Save score to DB
     axios.post('/api/scores', {
         player_name: props.playerName,
         player_id: props.playerId,
-        room_code: props.roomCode,
         score: Math.floor(gameState.score)
     });
     
-    // Check if all players are dead (including this one)
-    checkAllPlayersDead();
-}
-
-function checkAllPlayersDead() {
-    const allPlayers = {
-        [props.playerId]: { isDead: localPlayer.isDead, name: props.playerName, score: Math.floor(gameState.score) }
-    };
-    
-    Object.assign(allPlayers, remotePlayers.value);
-    
-    const allDead = Object.values(allPlayers).every(player => player.isDead);
-    
-    console.log('checkAllPlayersDead - allDead:', allDead, 'gameEnded:', gameEnded.value, 'players:', allPlayers);
-    
-    if (allDead && !gameEnded.value) {
-        gameEnded.value = true;
-        console.log('Setting gameEnded to true');
-        declareChampion(allPlayers);
-    }
-}
-
-function declareChampion(players) {
-    const alivePlayers = Object.values(players).filter(player => !player.isDead);
-    
-    if (alivePlayers.length === 1) {
-        champion.value = alivePlayers[0];
-    } else {
-        // All players are dead, find highest score
-        const sortedPlayers = Object.values(players).sort((a, b) => b.score - a.score);
-        champion.value = sortedPlayers[0];
-    }
-    
-    console.log('Champion:', champion.value);
+    gameEnded.value = true;
 }
 
 // --- Rendering ---
@@ -696,16 +519,6 @@ function draw() {
 
     // Local Player - Neon Blue Gradient Base
     drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#0ea5e9', props.playerName, true, localPlayer.wingPhase, localPlayer.onGround, tailPhase);
-
-    // Remote Players with spacing
-    const playerSpacing = 60; // Horizontal spacing between players
-    let playerIndex = 0;
-    
-    Object.values(remotePlayers.value).forEach(p => {
-        const offsetX = canvasWidth.value/4 + ((playerIndex + 1) * playerSpacing);
-        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false, p.wingPhase || 0, p.onGround ?? true, tailPhase);
-        playerIndex++;
-    });
     
     // Particles
     particles.value.forEach(p => {
@@ -724,7 +537,7 @@ function draw() {
     const scoreX = isMobile.value ? canvasWidth.value - 80 : canvasWidth.value - 150;
     c.fillText(`SCORE: ${displayScore}`, scoreX, 40);
     
-    if (localPlayer.isDead || gameEnded.value) {
+    if (gameEnded.value) {
         drawGameOver();
     }
 
@@ -1165,57 +978,22 @@ function drawGameOver() {
     
     const isMobileView = isMobile.value;
     const titleSize = isMobileView ? '20px' : '30px';
-    const nameSize = isMobileView ? '16px' : '20px';
     const scoreSize = isMobileView ? '12px' : '14px';
     const textSize = isMobileView ? '10px' : '12px';
+
+    // Regular game over for single player
+    c.fillStyle = '#f43f5e';
+    c.font = `${titleSize} "Press Start 2P"`;
+    c.textAlign = 'center';
+    c.fillText('GAME OVER', canvasWidth.value/2, canvasHeight.value/2 - 20);
     
-    if (gameEnded.value && champion.value) {
-        // Show champion
-        c.fillStyle = '#10b981';
-        c.font = `${titleSize} "Press Start 2P"`;
-        c.textAlign = 'center';
-        c.fillText('CHAMPION!', canvasWidth.value/2, canvasHeight.value/2 - 50);
-        
-        c.fillStyle = '#fbbf24';
-        c.font = `${nameSize} "Press Start 2P"`;
-        c.fillText(champion.value.name, canvasWidth.value/2, canvasHeight.value/2 - 10);
-        
-        c.fillStyle = '#f8fafc';
-        c.font = `${scoreSize} "Press Start 2P"`;
-        c.fillText(`SCORE: ${champion.value.score}`, canvasWidth.value/2, canvasHeight.value/2 + 30);
-        
-        c.font = `${textSize} "Orbitron"`;
-        c.fillStyle = '#cbd5e1';
-        c.fillText('SPACE TO PLAY AGAIN • ESC TO LOBBY', canvasWidth.value/2, canvasHeight.value/2 + 70);
-    } else if (localPlayer.isDead && !gameEnded.value) {
-        // Waiting for other players
-        c.fillStyle = '#f59e0b';
-        c.font = `${isMobileView ? '18px' : '24px'} "Press Start 2P"`;
-        c.textAlign = 'center';
-        c.fillText('ELIMINATED!', canvasWidth.value/2, canvasHeight.value/2 - 30);
-        
-        c.fillStyle = '#f8fafc';
-        c.font = `${scoreSize} "Press Start 2P"`;
-        c.fillText(`FINAL SCORE: ${Math.floor(gameState.score)}`, canvasWidth.value/2, canvasHeight.value/2 + 10);
-        
-        c.font = `${textSize} "Orbitron"`;
-        c.fillStyle = '#cbd5e1';
-        c.fillText('WAITING FOR OTHER PLAYERS...', canvasWidth.value/2, canvasHeight.value/2 + 50);
-    } else {
-        // Regular game over for single player
-        c.fillStyle = '#f43f5e';
-        c.font = `${titleSize} "Press Start 2P"`;
-        c.textAlign = 'center';
-        c.fillText('GAME OVER', canvasWidth.value/2, canvasHeight.value/2 - 20);
-        
-        c.fillStyle = '#f8fafc';
-        c.font = `${scoreSize} "Press Start 2P"`;
-        c.fillText(`FINAL SCORE: ${Math.floor(gameState.score)}`, canvasWidth.value/2, canvasHeight.value/2 + 30);
-        
-        c.font = `${textSize} "Orbitron"`;
-        c.fillStyle = '#cbd5e1';
-        c.fillText('SPACE TO RESTART • ESC TO LOBBY', canvasWidth.value/2, canvasHeight.value/2 + 70);
-    }
+    c.fillStyle = '#f8fafc';
+    c.font = `${scoreSize} "Press Start 2P"`;
+    c.fillText(`FINAL SCORE: ${Math.floor(gameState.score)}`, canvasWidth.value/2, canvasHeight.value/2 + 30);
+    
+    c.font = `${textSize} "Orbitron"`;
+    c.fillStyle = '#cbd5e1';
+    c.fillText('SPACE TO RESTART • ESC TO LOBBY', canvasWidth.value/2, canvasHeight.value/2 + 70);
 }
 
 function drawRestartConfirmation() {
@@ -1273,30 +1051,6 @@ function drawRestartConfirmation() {
 
 <template>
     <div class="game-container">
-        <div class="player-list">
-            <h3>PLAYERS</h3>
-            <div v-for="(p, id) in remotePlayers" :key="id" class="player-item" :class="{ dead: p.isDead }">
-                <div class="player-info">
-                    <span class="status-dot"></span>
-                    <span class="name">{{ p.name }}</span>
-                </div>
-                <div class="high-score" v-if="playerHighScores[id]">HI: {{ playerHighScores[id].toLocaleString() }}</div>
-            </div>
-            <div class="player-item self">
-                <div class="player-info">
-                    <span class="status-dot"></span>
-                    <span class="name">{{ playerName }} (YOU)</span>
-                </div>
-                <div class="high-score" v-if="playerHighScores[playerId]">HI: {{ playerHighScores[playerId].toLocaleString() }}</div>
-            </div>
-
-            <div class="scoreboard-wrapper">
-                <Scoreboard :key="scoreboardKey" />
-            </div>
-        </div>
-
-
-        
         <div class="canvas-wrapper">
             <canvas 
                 ref="canvasRef" 
@@ -1306,6 +1060,18 @@ function drawRestartConfirmation() {
             <div class="instructions">
                 <span v-if="!isMobile">SPACEBAR JUMP • DOWN ARROW DESCEND • ESC QUIT</span>
                 <span v-else>TAP TO JUMP • BACK TO QUIT</span>
+            </div>
+            
+            <div class="player-hud">
+                <span class="player-name">{{ playerName }}</span>
+                <span v-if="playerHighScore > 0" class="high-score">HI: {{ playerHighScore.toLocaleString() }}</span>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="scoreboard-wrapper">
+                <h3>GLOBAL LEADERBOARD</h3>
+                <Scoreboard :key="scoreboardKey" />
             </div>
         </div>
     </div>
@@ -1326,82 +1092,6 @@ function drawRestartConfirmation() {
     }
 }
 
-.player-list {
-    width: 100%;
-    background: rgba(15, 23, 42, 0.8);
-    border: 1px solid rgba(14, 165, 233, 0.2);
-    border-radius: 0.75rem;
-    padding: 0.75rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-@media (min-width: 769px) {
-    .player-list {
-        width: 280px; /* Increased from 180px */
-    }
-}
-
-.player-list h3 {
-    font-size: 0.7rem;
-    color: #475569;
-    margin-bottom: 0.5rem;
-    letter-spacing: 2px;
-}
-
-.player-item {
-    font-size: 0.8rem;
-    padding: 0.3rem 0;
-    color: #cbd5e1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.player_info .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.player-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    overflow: hidden; /* Ensure container respects children overflow */
-}
-
-.high-score {
-    font-size: 0.6rem;
-    font-family: 'Press Start 2P', cursive;
-    color: #fbbf24;
-    margin-left: 1.1rem;
-}
-
-
-.status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 5px #22c55e;
-}
-
-.player-item.dead {
-    color: #475569;
-    text-decoration: line-through;
-}
-
-.player-item.dead .status-dot {
-    background: #ef4444;
-    box-shadow: none;
-}
-
-.player-item.self {
-    color: #38bdf8;
-    font-weight: 700;
-}
-
 .canvas-wrapper {
     position: relative;
     border-radius: 0.5rem;
@@ -1411,6 +1101,7 @@ function drawRestartConfirmation() {
     width: 100%;
     max-width: 100%;
     margin: 0 auto;
+    flex: 1;
 }
 
 @media (min-width: 769px) {
@@ -1446,10 +1137,53 @@ canvas {
     }
 }
 
+.player-hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-shadow: 1px 1px 0 #000;
+}
+
+.player-name {
+    color: #38bdf8;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.6rem;
+}
+
+.high-score {
+    color: #fbbf24;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.5rem;
+}
+
+.side-panel {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 769px) {
+    .side-panel {
+        width: 280px;
+    }
+}
+
+.side-panel h3 {
+    font-size: 0.7rem;
+    color: #475569;
+    margin-bottom: 0.5rem;
+    letter-spacing: 2px;
+    text-align: center;
+}
+
 .scoreboard-wrapper {
-    margin-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 :deep(.scoreboard) {

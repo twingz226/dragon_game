@@ -1,16 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import LobbyScreen from './components/LobbyScreen.vue';
-import WaitingRoom from './components/WaitingRoom.vue';
 import GameCanvas from './components/GameCanvas.vue';
 import { v4 as uuidv4 } from 'uuid';
 
-const currentScreen = ref('lobby'); // lobby, waiting, playing, game-over
-const roomData = ref(null);
+const currentScreen = ref('lobby'); // lobby, playing, game-over
 const playerId = ref(localStorage.getItem('dino_player_id') || uuidv4());
 const playerName = ref(localStorage.getItem('dino_player_name') || '');
 const isAuthenticated = ref(false);
 const currentUser = ref(null);
+const runSeed = ref(null);
 
 onMounted(() => {
     localStorage.setItem('dino_player_id', playerId.value);
@@ -50,15 +49,8 @@ async function logout() {
     }
 }
 
-function handleJoined(data) {
-    roomData.value = data;
-    
-    // All players go to waiting room first
-    currentScreen.value = 'waiting';
-}
-
-function handleGameStarted(data) {
-    roomData.value = { ...roomData.value, ...data };
+function handleStarted() {
+    runSeed.value = Math.floor(Math.random() * 999999999);
     currentScreen.value = 'playing';
 }
 
@@ -68,7 +60,6 @@ function handleGameOver(score) {
 
 function backToLobby() {
     currentScreen.value = 'lobby';
-    roomData.value = null;
 }
 </script>
 
@@ -77,10 +68,6 @@ function backToLobby() {
         <header class="game-header">
             <h1 class="glitch" data-text="DINO RACE">DINO RACE</h1>
             <div class="header-info">
-                <div v-if="roomData" class="room-info">
-                    <span>ROOM: <strong>{{ roomData.room_code }}</strong></span>
-                    <span>PLAYER: <strong>{{ playerName }}</strong></span>
-                </div>
                 <div v-if="currentUser" class="user-info">
                     <span>USER: <strong>{{ currentUser.name }}</strong></span>
                     <button @click="logout" class="logout-btn">Logout</button>
@@ -93,25 +80,13 @@ function backToLobby() {
                 v-if="currentScreen === 'lobby'" 
                 :playerId="playerId"
                 :playerName="playerName"
-                @joined="handleJoined" 
-            />
-            <WaitingRoom 
-                v-if="currentScreen === 'waiting'" 
-                :roomCode="roomData.room_code"
-                :playerId="playerId"
-                :playerName="playerName"
-                :isHost="roomData.is_host"
-                :obstacleSeed="roomData.obstacle_seed"
-                @game-started="handleGameStarted"
-                @back="backToLobby"
+                @started="handleStarted" 
             />
             <GameCanvas 
                 v-if="currentScreen === 'playing'" 
-                :roomCode="roomData.room_code"
                 :playerId="playerId"
                 :playerName="playerName"
-                :isHost="roomData.is_host"
-                :obstacleSeed="roomData.obstacle_seed"
+                :obstacleSeed="runSeed"
                 @game-over="handleGameOver"
                 @back="backToLobby"
             />
@@ -148,13 +123,6 @@ function backToLobby() {
     gap: 1.5rem;
     align-items: center;
     flex-wrap: wrap;
-}
-
-.room-info {
-    font-size: 0.8rem;
-    display: flex;
-    gap: 1.5rem;
-    color: #94a3b8;
 }
 
 .user-info {
@@ -196,7 +164,7 @@ function backToLobby() {
         width: 100%;
     }
     
-    .room-info, .user-info {
+    .user-info {
         flex-direction: column;
         gap: 0.5rem;
         align-items: center;
@@ -216,26 +184,6 @@ h1 {
     h1 {
         font-size: 1rem;
     }
-}
-
-.room-info {
-    font-size: 0.8rem;
-    display: flex;
-    gap: 1.5rem;
-    color: #94a3b8;
-}
-
-@media (max-width: 768px) {
-    .room-info {
-        font-size: 0.7rem;
-        gap: 1rem;
-        flex-direction: column;
-        align-items: center;
-    }
-}
-
-.room-info strong {
-    color: #f8fafc;
 }
 
 .game-content {

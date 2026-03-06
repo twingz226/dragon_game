@@ -1,51 +1,23 @@
 <script setup>
-import { ref } from 'vue';
-import axios from 'axios';
 import Scoreboard from './Scoreboard.vue';
 
 const props = defineProps({
     playerId: String,
     playerName: String
 });
-const emit = defineEmits(['joined']);
+const emit = defineEmits(['started']);
 
-const roomCodeInput = ref('');
-const loading = ref(false);
-const error = ref('');
-
-async function joinRoom(code = null) {
-    if (!props.playerName) {
-        error.value = "Enter your name first!";
-        return;
-    }
-    
-    loading.value = true;
-    error.value = '';
-    
-    try {
-        const response = await axios.post('/api/rooms/join', {
-            player_id: props.playerId,
-            player_name: props.playerName,
-            room_code: code
-        });
-        
-        emit('joined', {
-            ...response.data,
-            playerName: props.playerName
-        });
-    } catch (e) {
-        error.value = e.response?.data?.error || "Failed to join room.";
-    } finally {
-        loading.value = false;
-    }
+function startGame() {
+    if (!props.playerName) return;
+    emit('started');
 }
 </script>
 
 <template>
     <div class="lobby-card">
         <div class="card-header">
-            <h2>JOIN THE RACE</h2>
-            <p>Enter your nickname to start</p>
+            <h2>START THE RACE</h2>
+            <p>Ready to run?</p>
         </div>
 
         <div class="form-group">
@@ -58,28 +30,10 @@ async function joinRoom(code = null) {
         </div>
 
         <div class="actions">
-            <button class="btn-primary" :disabled="loading" @click="joinRoom()">
-                {{ loading ? 'CREATING...' : 'CREATE NEW ROOM' }}
+            <button class="btn-primary" @click="startGame()">
+                PLAY
             </button>
-            
-            <div class="separator">
-                <span>OR</span>
-            </div>
-
-            <div class="form-group join-group">
-                <input 
-                    v-model="roomCodeInput" 
-                    type="text" 
-                    placeholder="ROOM CODE" 
-                    maxlength="6"
-                >
-                <button class="btn-secondary" :disabled="loading" @click="joinRoom(roomCodeInput)">
-                    JOIN
-                </button>
-            </div>
         </div>
-
-        <p v-if="error" class="error-msg">{{ error }}</p>
 
         <div class="leaderboard-section">
             <Scoreboard />
@@ -145,11 +99,6 @@ input {
     font-size: 0.9rem;
 }
 
-input:focus {
-    border-color: #38bdf8;
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
-}
-
 .actions {
     display: flex;
     flex-direction: column;
@@ -177,47 +126,6 @@ button {
     background: #38bdf8;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
-}
-
-.btn-secondary {
-    background: #334155;
-    color: #f8fafc;
-    padding: 0 1.5rem;
-}
-
-.btn-secondary:hover {
-    background: #475569;
-}
-
-.separator {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    color: #475569;
-    font-size: 0.7rem;
-    margin: 0.5rem 0;
-}
-
-.separator::before,
-.separator::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #334155;
-}
-
-.separator span {
-    padding: 0 1rem;
-}
-
-.join-group {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.error-msg {
-    color: #f43f5e;
-    font-size: 0.8rem;
-    margin-top: 1.5rem;
 }
 
 .leaderboard-section {
