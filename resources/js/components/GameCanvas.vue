@@ -154,6 +154,13 @@ function setupEcho() {
                 p.y = e.y;
             }
         })
+        .listenForWhisper('fast-fall', (e) => {
+            if (remotePlayers.value[e.playerId]) {
+                const p = remotePlayers.value[e.playerId];
+                p.vy = e.vy || 1200;
+                p.y = e.y;
+            }
+        })
         .listenForWhisper('player-died', (e) => {
             if (remotePlayers.value[e.playerId]) {
                 remotePlayers.value[e.playerId].isDead = true;
@@ -202,6 +209,12 @@ function handleKeyDown(e) {
         } else if (localPlayer.isDead) {
             // Player is dead but game hasn't ended for everyone yet
             console.log('Waiting for all players to finish...');
+        }
+    } else if (e.code === 'ArrowDown') {
+        e.preventDefault();
+        if (!localPlayer.onGround && !localPlayer.isDead) {
+            console.log('Fast falling');
+            fastFall();
         }
     } else if (e.key === 'Escape') {
         if (showRestartConfirm.value) {
@@ -264,6 +277,17 @@ function jump() {
     channel.whisper('jump', {
         playerId: props.playerId,
         y: localPlayer.y
+    });
+}
+
+function fastFall() {
+    localPlayer.vy = 1200;
+    
+    // Whisper to others
+    channel.whisper('fast-fall', {
+        playerId: props.playerId,
+        y: localPlayer.y,
+        vy: localPlayer.vy
     });
 }
 
