@@ -959,10 +959,6 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     const legSwingX2 = onGround ? Math.sin(runPhase2) * 8 : inAirTilt2;
     const legSwingY2 = onGround ? Math.max(0, Math.cos(runPhase2) * 6) : 0; 
     
-    // Arms swing in opposition to legs
-    const armSwingX1 = onGround ? -Math.sin(runPhase1) * 4 : 0;
-    const armSwingX2 = onGround ? -Math.sin(runPhase2) * 4 : 0;
-
     // Body bobbing (light vertical movement while running)
     const bodyBob = onGround ? Math.abs(Math.sin(wingPhase)) * 2 : 0;
     
@@ -998,15 +994,6 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     // Draw near leg
     drawLeg(x + 12 + ox, y + 26 + oy, false, legSwingX1, legSwingY1);
 
-    
-    // Small arms
-    // Draw far arm
-    c.fillStyle = isLocal ? '#0284c7' : '#334155';
-    c.fillRect(x + 20 + ox + armSwingX2, y + 18 + oy - bodyBob, 4, 4);
-    // Draw near arm
-    c.fillStyle = color;
-    c.fillRect(x + 16 + ox + armSwingX1, y + 18 + oy - bodyBob, 4, 4);
-    
     // Realistic Eye
     c.fillStyle = '#ffffff';
     c.beginPath();
