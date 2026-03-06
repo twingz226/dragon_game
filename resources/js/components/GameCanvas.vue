@@ -30,6 +30,14 @@ const BIRD_COLORS = [
     { main: '#f97316', wing: '#ea580c', beak: '#fdba74' }, // Orange
 ];
 
+const SNAKE_COLORS = [
+    { main: '#4ade80', belly: '#22c55e', eye: '#111827', pattern: '#166534', tongue: '#ef4444' }, // Bright Green
+    { main: '#ca8a04', belly: '#facc15', eye: '#111827', pattern: '#854d0e', tongue: '#ef4444' }, // Brown/Yellow
+    { main: '#57534e', belly: '#a8a29e', eye: '#f59e0b', pattern: '#1c1917', tongue: '#ef4444' }, // Gray/Black
+    { main: '#d97706', belly: '#fbbf24', eye: '#111827', pattern: '#9a3412', tongue: '#ef4444' }, // Orange
+    { main: '#65a30d', belly: '#a3e635', eye: '#111827', pattern: '#3f6212', tongue: '#ef4444' }, // Olive
+];
+
 
 // --- State ---
 const canvasRef = ref(null);
@@ -369,6 +377,8 @@ function update(dt) {
         // Animate bird wings
         if (obs.type === 'bird') {
             obs.wingPhase = (obs.wingPhase + dt * 10) % (Math.PI * 2);
+        } else if (obs.type === 'snake') {
+            obs.snakePhase = (obs.snakePhase + dt * 4) % (Math.PI * 2); // Slow wave-like animation
         }
         
         // Collision detection for local player
@@ -406,9 +416,11 @@ function spawnObstacle() {
     const typeRand = nextRandom();
     let type;
     
-    if (typeRand > 0.7 && gameState.score >= 500) {
+    if (typeRand > 0.8 && gameState.score >= 500) {
         type = 'bird';
-    } else if (typeRand > 0.35) {
+    } else if (typeRand > 0.6 && gameState.score >= 200) {
+        type = 'snake';
+    } else if (typeRand > 0.3) {
         type = 'large';
     } else {
         type = 'small';
@@ -429,6 +441,19 @@ function spawnObstacle() {
         });
 
 
+    } else if (type === 'snake') {
+        const c1 = Math.floor(nextRandom() * SNAKE_COLORS.length);
+        const c2 = Math.floor(nextRandom() * SNAKE_COLORS.length);
+        const c3 = Math.floor(nextRandom() * SNAKE_COLORS.length);
+        obstacles.value.push({
+            x: canvasWidth.value,
+            width: 45, // Total width of 3 snakes
+            height: 15,
+            y: groundY.value - 15, // On the ground
+            type: 'snake',
+            snakePhase: 0,
+            colors: [SNAKE_COLORS[c1], SNAKE_COLORS[c2], SNAKE_COLORS[c3]]
+        });
     } else {
         // Ground cacti obstacles
         obstacles.value.push({
@@ -622,6 +647,9 @@ function draw() {
         if (obs.type === 'bird') {
             // Draw flying bird
             drawBird(obs.x, obs.y, obs.wingPhase, obs.colors);
+        } else if (obs.type === 'snake') {
+            // Draw 3 slithering snakes
+            drawSnake(obs.x, obs.y, obs.snakePhase, obs.colors);
         } else {
 
             // Draw ground cacti
@@ -639,8 +667,11 @@ function draw() {
         }
     });
 
+    // Calculate constant slow tail phase based on absolute time
+    const tailPhase = (gameState.lastTime / 1000) * 8; // Decreased constant speed for tail animation
+
     // Local Player - Neon Blue Gradient Base
-    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#0ea5e9', props.playerName, true, localPlayer.wingPhase, localPlayer.onGround);
+    drawDino(canvasWidth.value/4, localPlayer.y, localPlayer.isDead ? '#64748b' : '#0ea5e9', props.playerName, true, localPlayer.wingPhase, localPlayer.onGround, tailPhase);
 
     // Remote Players with spacing
     const playerSpacing = 60; // Horizontal spacing between players
@@ -648,7 +679,7 @@ function draw() {
     
     Object.values(remotePlayers.value).forEach(p => {
         const offsetX = canvasWidth.value/4 + ((playerIndex + 1) * playerSpacing);
-        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false, p.wingPhase || 0, p.onGround ?? true);
+        drawDino(offsetX, p.y, p.isDead ? '#475569' : 'rgba(14, 165, 233, 0.5)', p.name, false, p.wingPhase || 0, p.onGround ?? true, tailPhase);
         playerIndex++;
     });
     
@@ -739,8 +770,110 @@ function drawBird(x, y, wingPhase, colors = BIRD_COLORS[0]) {
     c.restore();
 }
 
+function drawSnake(x, y, snakePhase, colors) {
+    const c = ctx.value;
+    c.save();
+    
+    const segments = 12;
+    const segmentWidth = 4;
 
-function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
+    // Draw 3 snakes (from back to front for z-ordering)
+    for (let s = 2; s >= 0; s--) {
+        const snakeColor = colors[s];
+        
+        // Offset snakes
+        const sy = y + s * 4; 
+        const sx = x + s * 5;
+        
+        // Slightly different slither phase offsets
+        const phase = snakePhase + s * 1.5;
+        
+        c.fillStyle = snakeColor.main;
+        c.beginPath();
+        
+        // Top edge of snake
+        for (let i = 0; i < segments; i++) {
+            const px = sx + i * segmentWidth;
+            const waveY = Math.sin(phase - i * 0.6) * 3;
+            const py = sy + waveY;
+            
+            if (i === 0) {
+                c.moveTo(px, py - 2); // Snout top
+            } else {
+                c.lineTo(px, py - 3);
+            }
+        }
+        
+        // Tail
+        const lastWaveY = Math.sin(phase - (segments - 1) * 0.6) * 3;
+        c.lineTo(sx + segments * segmentWidth + 2, sy + lastWaveY);
+
+        // Bottom edge
+        for (let i = segments - 1; i >= 0; i--) {
+            const waveY = Math.sin(phase - i * 0.6) * 3;
+            const px = sx + i * segmentWidth;
+            const py = sy + waveY;
+            
+            if (i === 0) {
+                c.lineTo(px, py + 2); // Snout bottom
+            } else {
+                c.lineTo(px, py + 3);
+            }
+        }
+        
+        c.closePath();
+        c.fill();
+        
+        // Belly pattern (bottom part of the snake)
+        c.fillStyle = snakeColor.belly || snakeColor.main;
+        c.beginPath();
+        for (let i = 0; i < segments; i++) {
+            const px = sx + i * segmentWidth;
+            const waveY = Math.sin(phase - i * 0.6) * 3;
+            const py = sy + waveY;
+            if (i === 0) c.moveTo(px, py + 1);
+            else c.lineTo(px, py + 1);
+        }
+        for (let i = segments - 1; i >= 0; i--) {
+            const px = sx + i * segmentWidth;
+            const waveY = Math.sin(phase - i * 0.6) * 3;
+            const py = sy + waveY;
+            c.lineTo(px, py + 3);
+        }
+        c.closePath();
+        c.fill();
+        
+        // Add pattern/scale spots
+        c.fillStyle = snakeColor.pattern || '#000000';
+        for (let i = 2; i < segments - 2; i += 2) {
+            const waveY = Math.sin(phase - i * 0.6) * 3;
+            c.fillRect(sx + i * segmentWidth, sy + waveY - 1, 2, 2);
+        }
+
+        // Draw Eye
+        const headWaveY = Math.sin(phase) * 3;
+        c.fillStyle = snakeColor.eye || '#000000';
+        c.fillRect(sx + 2, sy + headWaveY - 1, 1, 1);
+        
+        // Draw Tongue (flicks in and out)
+        if (Math.sin(phase * 4) > 0) {
+            c.fillStyle = snakeColor.tongue || '#ef4444';
+            c.beginPath();
+            c.moveTo(sx, sy + headWaveY + 1);
+            c.lineTo(sx - 3, sy + headWaveY);
+            c.lineTo(sx - 3, sy + headWaveY - 1); 
+            c.lineTo(sx - 2, sy + headWaveY + 1);
+            c.lineTo(sx - 3, sy + headWaveY + 2);
+            c.lineTo(sx, sy + headWaveY + 1);
+            c.fill();
+        }
+    }
+    
+    c.restore();
+}
+
+
+function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, tailPhase = 0) {
     const c = ctx.value;
     
     c.save();
@@ -813,7 +946,7 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
 
     for (let i = 0; i < tailSegments; i++) {
         // Sine wave offset for the "swing"
-        const wave = Math.sin(wingPhase * 1.5 - i * 0.5) * (2 + i * 1.5);
+        const wave = Math.sin(tailPhase - i * 0.5) * (2 + i * 1.5);
         currentX -= 4.5; // Move left
         const targetY = (y + 20 + oy) + wave;
         
