@@ -945,43 +945,67 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     c.lineTo(x + 26 + ox + spreadOffset, y + oy - 4 - flapOffset);
     c.stroke();
     // Limb Animation
-    // We can use the wingPhase for walking as well, but scale it differently
-    const walkSwing1 = onGround ? Math.sin(wingPhase) * 4 : 0; // Right leg/arm
-    const walkSwing2 = onGround ? Math.cos(wingPhase) * 4 : 0; // Left leg/arm
+    // Use wingPhase for running cycle. Legs are 180 degrees out of phase for realistic running.
+    const runPhase1 = onGround ? wingPhase : 0;
+    const runPhase2 = onGround ? wingPhase + Math.PI : 0;
+    
+    // When in air, slightly pose the legs
+    const inAirTilt1 = !onGround ? -3 : 0;
+    const inAirTilt2 = !onGround ? 3 : 0;
+
+    const legSwingX1 = onGround ? Math.sin(runPhase1) * 8 : inAirTilt1; 
+    const legSwingY1 = onGround ? Math.max(0, Math.cos(runPhase1) * 6) : 0; // Lift leg when moving forward
+
+    const legSwingX2 = onGround ? Math.sin(runPhase2) * 8 : inAirTilt2;
+    const legSwingY2 = onGround ? Math.max(0, Math.cos(runPhase2) * 6) : 0; 
+    
+    // Arms swing in opposition to legs
+    const armSwingX1 = onGround ? -Math.sin(runPhase1) * 4 : 0;
+    const armSwingX2 = onGround ? -Math.sin(runPhase2) * 4 : 0;
+
+    // Body bobbing (light vertical movement while running)
+    const bodyBob = onGround ? Math.abs(Math.sin(wingPhase)) * 2 : 0;
     
     // Enhanced Dragon Legs
-    const drawLeg = (lx, ly, isFar, swing) => {
+    const drawLeg = (lx, ly, isFar, swingX, swingY) => {
         const legColor = isFar ? (isLocal ? '#0284c7' : '#334155') : color;
         c.fillStyle = legColor;
         
-        // Thigh
-        c.fillRect(lx + swing/2, ly, 8, 5);
+        const thighY = ly - swingY/2 - bodyBob;
+        const thighH = 5 + swingY/2;
         
-        // Shin (angled more by swing)
-        c.fillRect(lx + swing, ly + 5, 6, 6);
+        const shinY = ly + 5 - swingY - bodyBob;
+        // Shin height must stretch down to meet the foot. Foot is at ly + 10 - swingY.
+        const shinH = (ly + 10 - swingY) - shinY + 1; // +1 for overlap
+        
+        // Thigh
+        c.fillRect(lx + swingX/2.5, thighY, 8, thighH);
+        
+        // Shin (angled more dynamically during stride)
+        c.fillRect(lx + swingX * 0.8, shinY, 6, shinH);
         
         // Foot
-        c.fillRect(lx + swing - 2, ly + 10, 10, 3);
+        c.fillRect(lx + swingX - 2, ly + 10 - swingY, 10, 3);
         
         // Claws (small white details)
         c.fillStyle = '#ffffff';
-        c.fillRect(lx + swing + 4, ly + 11, 2, 1);
-        c.fillRect(lx + swing + 7, ly + 11, 2, 1);
+        c.fillRect(lx + swingX + 4, ly + 11 - swingY, 2, 1);
+        c.fillRect(lx + swingX + 7, ly + 11 - swingY, 2, 1);
     };
 
     // Draw far leg first
-    drawLeg(x + 22 + ox, y + 26 + oy, true, walkSwing2);
+    drawLeg(x + 22 + ox, y + 26 + oy, true, legSwingX2, legSwingY2);
     // Draw near leg
-    drawLeg(x + 12 + ox, y + 26 + oy, false, walkSwing1);
+    drawLeg(x + 12 + ox, y + 26 + oy, false, legSwingX1, legSwingY1);
 
     
     // Small arms
     // Draw far arm
     c.fillStyle = isLocal ? '#0284c7' : '#334155';
-    c.fillRect(x + 20 + ox + walkSwing2, y + 18 + oy, 4, 4);
+    c.fillRect(x + 20 + ox + armSwingX2, y + 18 + oy - bodyBob, 4, 4);
     // Draw near arm
     c.fillStyle = color;
-    c.fillRect(x + 16 + ox + walkSwing1, y + 18 + oy, 4, 4);
+    c.fillRect(x + 16 + ox + armSwingX1, y + 18 + oy - bodyBob, 4, 4);
     
     // Realistic Eye
     c.fillStyle = '#ffffff';
