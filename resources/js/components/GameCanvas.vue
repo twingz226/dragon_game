@@ -67,8 +67,7 @@ const gameEnded = ref(false);
 const scoreboardKey = ref(0);
 const showRestartConfirm = ref(false);
 const playerHighScore = ref(0);
-const headImage = new Image();
-headImage.src = '/images/head.jpg';
+
 
 
 // PRNG for synced obstacles
@@ -776,34 +775,45 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     }
     c.fill();
     
-    // Head
-    if (headImage.complete) {
-        c.save();
+    // Realistic Head
+    c.fillStyle = color;
+    c.beginPath();
+    c.moveTo(x + 22 + ox, y + 14 + oy); // Back of neck
+    c.lineTo(x + 22 + ox, y + 4 + oy); // Back of head
+    c.quadraticCurveTo(x + 30 + ox, y - 2 + oy, x + 38 + ox, y + 4 + oy); // Top of head
+    c.quadraticCurveTo(x + 44 + ox, y + 6 + oy, x + 46 + ox, y + 10 + oy); // Snout top
+    c.quadraticCurveTo(x + 46 + ox, y + 14 + oy, x + 44 + ox, y + 15 + oy); // Snout front
+    c.quadraticCurveTo(x + 36 + ox, y + 18 + oy, x + 28 + ox, y + 18 + oy); // Jaw lower
+    c.quadraticCurveTo(x + 24 + ox, y + 14 + oy, x + 22 + ox, y + 14 + oy); // Neck front
+    c.fill();
+    
+    // Brow ridge
+    c.strokeStyle = isLocal ? '#075985' : '#1e293b';
+    c.lineWidth = 1.5;
+    c.beginPath();
+    c.moveTo(x + 32 + ox, y + 6 + oy);
+    c.quadraticCurveTo(x + 36 + ox, y + 4 + oy, x + 40 + ox, y + 7 + oy);
+    c.stroke();
+
+    // Animated Hair Strands
+    c.lineWidth = 1.5;
+    for (let i = 0; i < 2; i++) {
+        c.strokeStyle = i === 0 ? '#fbbf24' : '#f59e0b';
         c.beginPath();
-        if (c.roundRect) {
-            // Define a rounded clipping path for the head
-            c.roundRect(x + 23 + ox, y + 2 + oy, 22, 22, 8);
-        } else {
-            // Fallback to circle clipping
-            c.arc(x + 34 + ox, y + 13 + oy, 11, 0, Math.PI * 2);
-        }
-        c.clip();
+        let hx = x + 23 + ox;
+        let hy = y + 4 + oy + i * 2;
+        c.moveTo(hx, hy);
         
-        // Draw image (scaled/shifted to match hitbox)
-        c.drawImage(headImage, x + 23 + ox, y + 2 + oy, 22, 22);
-        c.restore();
-    } else {
-        // Fallback to rectangle if image not loaded
-        c.beginPath();
-        if (c.roundRect) {
-            c.roundRect(x + 24 + ox, y + 4 + oy, 16, 14, 2);
-        } else {
-            c.rect(x + 24 + ox, y + 4 + oy, 16, 14);
-        }
-        c.fill();
+        let hairPhase = tailPhase * 0.8 + i;
+        let cp1x = hx - 8;
+        let cp1y = hy - 4 + Math.sin(hairPhase) * 4;
+        let cp2x = hx - 16;
+        let cp2y = hy - 4 + Math.cos(hairPhase) * 5;
+        let endx = hx - 24;
+        let endy = hy - 2 + Math.sin(hairPhase * 1.2) * 6;
         
-        // Snout extension
-        c.fillRect(x + 36 + ox, y + 8 + oy, 6, 6);
+        c.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endx, endy);
+        c.stroke();
     }
 
 
@@ -963,34 +973,47 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     c.fillStyle = color;
     c.fillRect(x + 16 + ox + walkSwing1, y + 18 + oy, 4, 4);
     
-    // Eye (only if fallback)
-    if (!headImage.complete) {
-        c.fillStyle = '#ffffff';
-        c.fillRect(x + 32 + ox, y + 8 + oy, 3, 3);
-        c.fillStyle = '#000000';
-        c.fillRect(x + 33 + ox, y + 9 + oy, 1, 1);
-    }
-    
-    // Nostril (only if fallback)
-    if (!headImage.complete) {
-        c.fillStyle = '#000000';
-        c.fillRect(x + 38 + ox, y + 10 + oy, 1, 1);
-    }
-    
-    // Teeth (small triangles)
+    // Realistic Eye
     c.fillStyle = '#ffffff';
     c.beginPath();
-    c.moveTo(x + 36, y + 12);
-    c.lineTo(x + 37, y + 14);
-    c.lineTo(x + 35, y + 14);
-    c.closePath();
+    c.ellipse(x + 36 + ox, y + 8.5 + oy, 2.5, 1.5, Math.PI / 8, 0, Math.PI * 2);
     c.fill();
     
+    c.fillStyle = '#000000'; // Pupil
     c.beginPath();
-    c.moveTo(x + 38, y + 12);
-    c.lineTo(x + 39, y + 14);
-    c.lineTo(x + 37, y + 14);
-    c.closePath();
+    c.arc(x + 36.5 + ox, y + 8.5 + oy, 1, 0, Math.PI * 2);
+    c.fill();
+
+    // Eye highlight
+    c.fillStyle = '#ffffff';
+    c.fillRect(x + 36.5 + ox, y + 8 + oy, 0.5, 0.5);
+
+    // Nostril
+    c.fillStyle = '#0f172a';
+    c.beginPath();
+    c.ellipse(x + 43 + ox, y + 10 + oy, 1.5, 0.8, -Math.PI / 6, 0, Math.PI * 2);
+    c.fill();
+
+    // Jaw line separation for realism
+    c.strokeStyle = isLocal ? '#075985' : '#1e293b';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(x + 46 + ox, y + 13 + oy);
+    c.lineTo(x + 35 + ox, y + 15 + oy);
+    c.stroke();
+    
+    // Realistic Sharp Teeth
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.moveTo(x + 38 + ox, y + 14 + oy);
+    c.lineTo(x + 39 + ox, y + 16 + oy);
+    c.lineTo(x + 40 + ox, y + 14 + oy);
+    c.fill();
+
+    c.beginPath();
+    c.moveTo(x + 41 + ox, y + 13.5 + oy);
+    c.lineTo(x + 42 + ox, y + 15.5 + oy);
+    c.lineTo(x + 43 + ox, y + 13.5 + oy);
     c.fill();
     
     c.restore(); // Restore scaling before drawing the name tag
