@@ -88,6 +88,7 @@ onMounted(() => {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
     window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
     requestAnimationFrame(gameLoop);
     
     fetchHighScore();
@@ -102,6 +103,7 @@ onUnmounted(() => {
     window.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('resize', handleResize);
     window.removeEventListener('touchstart', handleTouchStart);
+    window.removeEventListener('touchmove', handleTouchMove);
 });
 
 async function fetchHighScore() {
@@ -197,8 +199,13 @@ function handleResize() {
     }
 }
 
+let touchStartY = 0;
+
 function handleTouchStart(e) {
-    e.preventDefault();
+    if (e.touches && e.touches.length > 0) {
+        touchStartY = e.touches[0].clientY;
+    }
+
     if (gameEnded.value) {
         // Game has ended, allow restart with confirmation
         if (!showRestartConfirm.value) {
@@ -208,11 +215,30 @@ function handleTouchStart(e) {
         }
     } else if (localPlayer.onGround && !localPlayer.isDead) {
         jump();
+        // Prevent default only when jumping to avoid blocking normal scrolling if needed elsewhere, 
+        // though standard is to prevent default on the game canvas.
+        e.preventDefault(); 
     } else if (localPlayer.isDead) {
         console.log('Waiting for all players to finish...');
     }
 }
 
+function handleTouchMove(e) {
+    if (localPlayer.onGround || localPlayer.isDead || gameEnded.value) return;
+    
+    if (e.touches && e.touches.length > 0) {
+        const touchEndY = e.touches[0].clientY;
+        const swipeDistance = touchEndY - touchStartY;
+        
+        // If swiped down more than 30 pixels
+        if (swipeDistance > 30) {
+            e.preventDefault(); // Prevent scrolling while fast falling
+            fastFall();
+            // Reset touchStartY so it doesn't trigger multiple times in one swipe
+            touchStartY = touchEndY; 
+        }
+    }
+}
 
 // --- Game Engine ---
 
