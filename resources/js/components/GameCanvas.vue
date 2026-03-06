@@ -775,13 +775,13 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     }
     c.fill();
     
-    // Neck
+    // Thick Neck
     c.fillStyle = color;
     c.beginPath();
-    c.moveTo(x + 29 + ox, y + 14 + oy); // Top front of body
-    c.lineTo(x + 18 + ox, y + 14 + oy); // Top middle of body
-    c.lineTo(x + 31 + ox, y + 7 + oy); // Back of neck base
-    c.lineTo(x + 34 + ox, y + 10 + oy); // Front of neck base
+    c.moveTo(x + 30 + ox, y + 14 + oy); // Top front of body (base of neck)
+    c.lineTo(x + 14 + ox, y + 14 + oy); // Top back of body (base of neck, pulled back for thickness)
+    c.lineTo(x + 31 + ox, y + 7 + oy); // Back of neck base (connecting to head)
+    c.lineTo(x + 36 + ox, y + 10 + oy); // Front of neck base (connecting to head, pushed forward for thickness)
     c.closePath();
     c.fill();
 
