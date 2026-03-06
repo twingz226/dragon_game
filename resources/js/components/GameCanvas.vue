@@ -410,8 +410,8 @@ function checkCollision(player, obs, playerX = canvasWidth.value/4) {
         },
         // Head: modified to match new neck extended position
         { 
-            x: playerX + (33 + ox) * sx, 
-            y: player.y + (-5 + oy) * sy, 
+            x: playerX + (31 + ox) * sx, 
+            y: player.y + (-3 + oy) * sy, 
             w: 24 * sx, 
             h: 14 * sy 
         }
@@ -778,31 +778,31 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     // Neck
     c.fillStyle = color;
     c.beginPath();
-    c.moveTo(x + 30 + ox, y + 14 + oy); // Top front of body
-    c.lineTo(x + 22 + ox, y + 14 + oy); // Top middle of body
-    c.lineTo(x + 33 + ox, y + 5 + oy); // Back of neck base
-    c.lineTo(x + 37 + ox, y + 9 + oy); // Front of neck base
+    c.moveTo(x + 29 + ox, y + 14 + oy); // Top front of body
+    c.lineTo(x + 18 + ox, y + 14 + oy); // Top middle of body
+    c.lineTo(x + 31 + ox, y + 7 + oy); // Back of neck base
+    c.lineTo(x + 34 + ox, y + 10 + oy); // Front of neck base
     c.closePath();
     c.fill();
 
     // Realistic Head
     c.fillStyle = color;
     c.beginPath();
-    c.moveTo(x + 33 + ox, y + 5 + oy); // Back of neck
-    c.lineTo(x + 33 + ox, y - 5 + oy); // Back of head
-    c.quadraticCurveTo(x + 41 + ox, y - 11 + oy, x + 49 + ox, y - 5 + oy); // Top of head
-    c.quadraticCurveTo(x + 55 + ox, y - 3 + oy, x + 57 + oy, y + 1 + oy); // Snout top
-    c.quadraticCurveTo(x + 57 + oy, y + 5 + oy, x + 55 + ox, y + 6 + oy); // Snout front
-    c.quadraticCurveTo(x + 47 + ox, y + 9 + oy, x + 39 + ox, y + 9 + oy); // Jaw lower
-    c.quadraticCurveTo(x + 35 + ox, y + 5 + oy, x + 33 + ox, y + 5 + oy); // Neck front
+    c.moveTo(x + 31 + ox, y + 7 + oy); // Back of neck
+    c.lineTo(x + 31 + ox, y - 3 + oy); // Back of head
+    c.quadraticCurveTo(x + 39 + ox, y - 9 + oy, x + 47 + ox, y - 3 + oy); // Top of head
+    c.quadraticCurveTo(x + 53 + ox, y - 1 + oy, x + 55 + ox, y + 3 + oy); // Snout top
+    c.quadraticCurveTo(x + 55 + ox, y + 7 + oy, x + 53 + ox, y + 8 + oy); // Snout front
+    c.quadraticCurveTo(x + 45 + ox, y + 11 + oy, x + 37 + ox, y + 11 + oy); // Jaw lower
+    c.quadraticCurveTo(x + 33 + ox, y + 7 + oy, x + 31 + ox, y + 7 + oy); // Neck front
     c.fill();
     
     // Brow ridge
     c.strokeStyle = isLocal ? '#075985' : '#1e293b';
     c.lineWidth = 1.5;
     c.beginPath();
-    c.moveTo(x + 43 + ox, y - 3 + oy);
-    c.quadraticCurveTo(x + 47 + ox, y - 5 + oy, x + 51 + ox, y - 2 + oy);
+    c.moveTo(x + 41 + ox, y - 1 + oy);
+    c.quadraticCurveTo(x + 45 + ox, y - 3 + oy, x + 49 + ox, y + 0 + oy);
     c.stroke();
 
     // Animated Hair Strands
@@ -810,8 +810,8 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     for (let i = 0; i < 2; i++) {
         c.strokeStyle = i === 0 ? '#fbbf24' : '#f59e0b';
         c.beginPath();
-        let hx = x + 34 + ox;
-        let hy = y - 5 + oy + i * 2;
+        let hx = x + 32 + ox;
+        let hy = y - 3 + oy + i * 2;
         c.moveTo(hx, hy);
         
         let hairPhase = tailPhase * 0.8 + i;
@@ -986,44 +986,44 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true, ta
     // Realistic Eye
     c.fillStyle = '#ffffff';
     c.beginPath();
-    c.ellipse(x + 47 + ox, y - 0.5 + oy, 2.5, 1.5, Math.PI / 8, 0, Math.PI * 2);
+    c.ellipse(x + 45 + ox, y + 1.5 + oy, 2.5, 1.5, Math.PI / 8, 0, Math.PI * 2);
     c.fill();
     
     c.fillStyle = '#000000'; // Pupil
     c.beginPath();
-    c.arc(x + 47.5 + ox, y - 0.5 + oy, 1, 0, Math.PI * 2);
+    c.arc(x + 45.5 + ox, y + 1.5 + oy, 1, 0, Math.PI * 2);
     c.fill();
 
     // Eye highlight
     c.fillStyle = '#ffffff';
-    c.fillRect(x + 47.5 + ox, y - 1 + oy, 0.5, 0.5);
+    c.fillRect(x + 45.5 + ox, y + 1 + oy, 0.5, 0.5);
 
     // Nostril
     c.fillStyle = '#0f172a';
     c.beginPath();
-    c.ellipse(x + 54 + ox, y + 1 + oy, 1.5, 0.8, -Math.PI / 6, 0, Math.PI * 2);
+    c.ellipse(x + 52 + ox, y + 3 + oy, 1.5, 0.8, -Math.PI / 6, 0, Math.PI * 2);
     c.fill();
 
     // Jaw line separation for realism
     c.strokeStyle = isLocal ? '#075985' : '#1e293b';
     c.lineWidth = 1;
     c.beginPath();
-    c.moveTo(x + 57 + ox, y + 4 + oy);
-    c.lineTo(x + 46 + ox, y + 6 + oy);
+    c.moveTo(x + 55 + ox, y + 6 + oy);
+    c.lineTo(x + 44 + ox, y + 8 + oy);
     c.stroke();
     
     // Realistic Sharp Teeth
     c.fillStyle = '#ffffff';
     c.beginPath();
-    c.moveTo(x + 49 + ox, y + 5 + oy);
-    c.lineTo(x + 50 + ox, y + 7 + oy);
-    c.lineTo(x + 51 + ox, y + 5 + oy);
+    c.moveTo(x + 47 + ox, y + 7 + oy);
+    c.lineTo(x + 48 + ox, y + 9 + oy);
+    c.lineTo(x + 49 + ox, y + 7 + oy);
     c.fill();
 
     c.beginPath();
-    c.moveTo(x + 52 + ox, y + 4.5 + oy);
-    c.lineTo(x + 53 + ox, y + 6.5 + oy);
-    c.lineTo(x + 54 + ox, y + 4.5 + oy);
+    c.moveTo(x + 50 + ox, y + 6.5 + oy);
+    c.lineTo(x + 51 + ox, y + 8.5 + oy);
+    c.lineTo(x + 52 + ox, y + 6.5 + oy);
     c.fill();
     
     c.restore(); // Restore scaling before drawing the name tag
