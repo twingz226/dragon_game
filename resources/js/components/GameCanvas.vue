@@ -785,18 +785,59 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
     c.fillRect(x + 36 + ox, y + 8 + oy, 6, 6);
 
 
-    // Dragon Tail Animation
-    const tailSwing = Math.sin(wingPhase) * 6; // swish horizontally/vertically
-    
-    // Dragon Tail (longer, spiky)
+    // Enhanced Procedural Dragon Tail
+    const tailSegments = 8;
+    const points = [];
+    let currentX = x + 8 + ox;
+    let currentY = y + 20 + oy; // Centered on body back
+
+    for (let i = 0; i < tailSegments; i++) {
+        // Sine wave offset for the "swing"
+        const wave = Math.sin(wingPhase * 2.5 - i * 0.5) * (2 + i * 1.5);
+        currentX -= 4.5; // Move left
+        const targetY = (y + 20 + oy) + wave;
+        
+        points.push({
+            x: currentX,
+            y: targetY,
+            width: 12 - (i * 1.4) // Tapering
+        });
+    }
+
+    // Draw Tail Shape
     c.beginPath();
-    c.moveTo(x + 8 + ox, y + 22 + oy);
-    c.lineTo(x - 4 + ox, y + 16 + oy + tailSwing/2);
-    c.lineTo(x - 12 + ox - Math.abs(tailSwing), y + 10 + oy + tailSwing);
-    c.lineTo(x - 8 + ox, y + 22 + oy + tailSwing/2);
-    c.lineTo(x + 4 + ox, y + 28 + oy);
+    c.moveTo(x + 8 + ox, y + 12 + oy); // Top-back of body
+    
+    // Top curve of the tail
+    points.forEach(p => {
+        c.lineTo(p.x, p.y - p.width / 2);
+    });
+
+    // Tip of the tail
+    const tip = points[tailSegments - 1];
+    c.lineTo(tip.x - 6, tip.y);
+
+    // Bottom curve of the tail
+    for (let i = tailSegments - 1; i >= 0; i--) {
+        const p = points[i];
+        c.lineTo(p.x, p.y + p.width / 2);
+    }
+
+    c.lineTo(x + 8 + ox, y + 28 + oy); // Bottom-back of body
     c.closePath();
     c.fill();
+
+    // Add Decorative Spikes/Scales along the top
+    c.fillStyle = isLocal ? '#075985' : '#1e293b'; // Use depth color
+    points.forEach((p, i) => {
+        if (i < tailSegments - 1) {
+            c.beginPath();
+            c.moveTo(p.x, p.y - p.width / 2);
+            c.lineTo(p.x - 2, p.y - p.width / 2 - 4); // Spike tip
+            c.lineTo(p.x - 4, p.y - p.width / 2);
+            c.fill();
+        }
+    });
 
     // Wing Animation
     const flapOffset = Math.sin(wingPhase) * 12; // vertical flap
