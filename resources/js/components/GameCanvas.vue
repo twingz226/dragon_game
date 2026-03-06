@@ -61,6 +61,8 @@ const champion = ref(null);
 const scoreboardKey = ref(0);
 const showRestartConfirm = ref(false);
 const playerHighScores = ref({}); // { playerId: score }
+const headImage = new Image();
+headImage.src = '/images/head.jpg';
 
 
 
@@ -772,17 +774,23 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
     }
     c.fill();
     
-    // Head (rectangular with snout)
-    c.beginPath();
-    if (c.roundRect) {
-        c.roundRect(x + 24 + ox, y + 4 + oy, 16, 14, 2);
+    // Head
+    if (headImage.complete) {
+        // Draw image (scaled/shifted to match hitbox)
+        c.drawImage(headImage, x + 23 + ox, y + 2 + oy, 22, 22);
     } else {
-        c.rect(x + 24 + ox, y + 4 + oy, 16, 14);
+        // Fallback to rectangle if image not loaded
+        c.beginPath();
+        if (c.roundRect) {
+            c.roundRect(x + 24 + ox, y + 4 + oy, 16, 14, 2);
+        } else {
+            c.rect(x + 24 + ox, y + 4 + oy, 16, 14);
+        }
+        c.fill();
+        
+        // Snout extension
+        c.fillRect(x + 36 + ox, y + 8 + oy, 6, 6);
     }
-    c.fill();
-    
-    // Snout extension
-    c.fillRect(x + 36 + ox, y + 8 + oy, 6, 6);
 
 
     // Enhanced Procedural Dragon Tail
@@ -941,15 +949,19 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
     c.fillStyle = color;
     c.fillRect(x + 16 + ox + walkSwing1, y + 18 + oy, 4, 4);
     
-    // Eye (more menacing)
-    c.fillStyle = '#ffffff';
-    c.fillRect(x + 32 + ox, y + 8 + oy, 3, 3);
-    c.fillStyle = '#000000';
-    c.fillRect(x + 33 + ox, y + 9 + oy, 1, 1);
+    // Eye (only if fallback)
+    if (!headImage.complete) {
+        c.fillStyle = '#ffffff';
+        c.fillRect(x + 32 + ox, y + 8 + oy, 3, 3);
+        c.fillStyle = '#000000';
+        c.fillRect(x + 33 + ox, y + 9 + oy, 1, 1);
+    }
     
-    // Nostril
-    c.fillStyle = '#000000';
-    c.fillRect(x + 38 + ox, y + 10 + oy, 1, 1);
+    // Nostril (only if fallback)
+    if (!headImage.complete) {
+        c.fillStyle = '#000000';
+        c.fillRect(x + 38 + ox, y + 10 + oy, 1, 1);
+    }
     
     // Teeth (small triangles)
     c.fillStyle = '#ffffff';
