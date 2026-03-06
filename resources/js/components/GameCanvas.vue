@@ -285,7 +285,7 @@ function update(dt) {
     gameState.gameTime += dt;
 
     // Spawn obstacles based on seeded random
-    if (gameState.gameTime > 5) {
+    if (gameState.gameTime > 3) {
         const lastObstacle = obstacles.value[obstacles.value.length - 1];
         
         // Increase distance slightly if score/speed threshold is reached
