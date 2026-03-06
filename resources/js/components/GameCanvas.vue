@@ -447,9 +447,9 @@ function spawnObstacle() {
         const c3 = Math.floor(nextRandom() * SNAKE_COLORS.length);
         obstacles.value.push({
             x: canvasWidth.value,
-            width: 45, // Total width of 3 snakes
-            height: 15,
-            y: groundY.value - 15, // On the ground
+            width: 30, // Total width of 3 snakes standing upright
+            height: 50,
+            y: groundY.value - 50, // On the ground
             type: 'snake',
             snakePhase: 0,
             colors: [SNAKE_COLORS[c1], SNAKE_COLORS[c2], SNAKE_COLORS[c3]]
@@ -775,15 +775,15 @@ function drawSnake(x, y, snakePhase, colors) {
     c.save();
     
     const segments = 12;
-    const segmentWidth = 4;
+    const segmentHeight = 4;
 
     // Draw 3 snakes (from back to front for z-ordering)
     for (let s = 2; s >= 0; s--) {
         const snakeColor = colors[s];
         
-        // Offset snakes
-        const sy = y + s * 4; 
-        const sx = x + s * 5;
+        // Offset snakes horizontally
+        const sx = x + s * 8 + 8; // x + 8, x + 16, x + 24
+        const sy = y + 2; // slightly below bounding box top
         
         // Slightly different slither phase offsets
         const phase = snakePhase + s * 1.5;
@@ -791,54 +791,54 @@ function drawSnake(x, y, snakePhase, colors) {
         c.fillStyle = snakeColor.main;
         c.beginPath();
         
-        // Top edge of snake
+        // Left edge of snake (going from top to bottom)
         for (let i = 0; i < segments; i++) {
-            const px = sx + i * segmentWidth;
-            const waveY = Math.sin(phase - i * 0.6) * 3;
-            const py = sy + waveY;
+            const waveX = Math.sin(phase - i * 0.6) * 4;
+            const px = sx + waveX;
+            const py = sy + i * segmentHeight;
             
             if (i === 0) {
-                c.moveTo(px, py - 2); // Snout top
+                c.moveTo(px - 2, py); // Snout left
             } else {
-                c.lineTo(px, py - 3);
+                c.lineTo(px - 3, py);
             }
         }
         
-        // Tail
-        const lastWaveY = Math.sin(phase - (segments - 1) * 0.6) * 3;
-        c.lineTo(sx + segments * segmentWidth + 2, sy + lastWaveY);
+        // Tail (bottom)
+        const lastWaveX = Math.sin(phase - (segments - 1) * 0.6) * 4;
+        c.lineTo(sx + lastWaveX, sy + segments * segmentHeight + 2);
 
-        // Bottom edge
+        // Right edge (going from bottom to top)
         for (let i = segments - 1; i >= 0; i--) {
-            const waveY = Math.sin(phase - i * 0.6) * 3;
-            const px = sx + i * segmentWidth;
-            const py = sy + waveY;
+            const waveX = Math.sin(phase - i * 0.6) * 4;
+            const px = sx + waveX;
+            const py = sy + i * segmentHeight;
             
             if (i === 0) {
-                c.lineTo(px, py + 2); // Snout bottom
+                c.lineTo(px + 2, py); // Snout right
             } else {
-                c.lineTo(px, py + 3);
+                c.lineTo(px + 3, py);
             }
         }
         
         c.closePath();
         c.fill();
         
-        // Belly pattern (bottom part of the snake)
+        // Belly pattern (right part of the snake)
         c.fillStyle = snakeColor.belly || snakeColor.main;
         c.beginPath();
         for (let i = 0; i < segments; i++) {
-            const px = sx + i * segmentWidth;
-            const waveY = Math.sin(phase - i * 0.6) * 3;
-            const py = sy + waveY;
-            if (i === 0) c.moveTo(px, py + 1);
-            else c.lineTo(px, py + 1);
+            const waveX = Math.sin(phase - i * 0.6) * 4;
+            const px = sx + waveX;
+            const py = sy + i * segmentHeight;
+            if (i === 0) c.moveTo(px + 1, py);
+            else c.lineTo(px + 1, py);
         }
         for (let i = segments - 1; i >= 0; i--) {
-            const px = sx + i * segmentWidth;
-            const waveY = Math.sin(phase - i * 0.6) * 3;
-            const py = sy + waveY;
-            c.lineTo(px, py + 3);
+            const waveX = Math.sin(phase - i * 0.6) * 4;
+            const px = sx + waveX;
+            const py = sy + i * segmentHeight;
+            c.lineTo(px + 3, py);
         }
         c.closePath();
         c.fill();
@@ -846,25 +846,26 @@ function drawSnake(x, y, snakePhase, colors) {
         // Add pattern/scale spots
         c.fillStyle = snakeColor.pattern || '#000000';
         for (let i = 2; i < segments - 2; i += 2) {
-            const waveY = Math.sin(phase - i * 0.6) * 3;
-            c.fillRect(sx + i * segmentWidth, sy + waveY - 1, 2, 2);
+            const waveX = Math.sin(phase - i * 0.6) * 4;
+            c.fillRect(sx + waveX - 2, sy + i * segmentHeight, 2, 2);
         }
 
         // Draw Eye
-        const headWaveY = Math.sin(phase) * 3;
+        const headWaveX = Math.sin(phase) * 4;
         c.fillStyle = snakeColor.eye || '#000000';
-        c.fillRect(sx + 2, sy + headWaveY - 1, 1, 1);
+        c.fillRect(sx + headWaveX - 1, sy + 2, 2, 2);
         
-        // Draw Tongue (flicks in and out)
+        // Draw Tongue (flicks up and slightly out)
         if (Math.sin(phase * 4) > 0) {
             c.fillStyle = snakeColor.tongue || '#ef4444';
             c.beginPath();
-            c.moveTo(sx, sy + headWaveY + 1);
-            c.lineTo(sx - 3, sy + headWaveY);
-            c.lineTo(sx - 3, sy + headWaveY - 1); 
-            c.lineTo(sx - 2, sy + headWaveY + 1);
-            c.lineTo(sx - 3, sy + headWaveY + 2);
-            c.lineTo(sx, sy + headWaveY + 1);
+            c.moveTo(sx + headWaveX, sy - 1);
+            c.lineTo(sx + headWaveX - 3, sy - 4);
+            c.lineTo(sx + headWaveX - 2, sy - 5); 
+            c.lineTo(sx + headWaveX, sy - 3);
+            c.lineTo(sx + headWaveX + 2, sy - 5);
+            c.lineTo(sx + headWaveX + 3, sy - 4);
+            c.lineTo(sx + headWaveX, sy - 1);
             c.fill();
         }
     }
