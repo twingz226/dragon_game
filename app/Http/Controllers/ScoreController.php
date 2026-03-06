@@ -24,7 +24,8 @@ class ScoreController extends Controller
     public function leaderboard()
     {
         $scores = Score::query()
-            ->select('player_name', 'score')
+            ->selectRaw('player_name, MAX(score) as score')
+            ->groupBy('player_name')
             ->orderByDesc('score')
             ->limit(10)
             ->get();
@@ -35,15 +36,15 @@ class ScoreController extends Controller
     public function getPersonalHighScores(Request $request)
     {
         $request->validate([
-            'player_ids' => 'required|array',
-            'player_ids.*' => 'string|max:36'
+            'player_names' => 'required|array',
+            'player_names.*' => 'string|max:255'
         ]);
 
-        $highScores = Score::selectRaw('player_id, MAX(score) as high_score')
-            ->whereIn('player_id', $request->player_ids)
-            ->groupBy('player_id')
+        $highScores = Score::selectRaw('player_name, MAX(score) as high_score')
+            ->whereIn('player_name', $request->player_names)
+            ->groupBy('player_name')
             ->get()
-            ->pluck('high_score', 'player_id');
+            ->pluck('high_score', 'player_name');
 
         return response()->json($highScores);
     }
