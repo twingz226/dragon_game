@@ -1304,7 +1304,7 @@ function drawRestartConfirmation() {
                 :height="canvasHeight"
             ></canvas>
             <div class="instructions">
-                <span v-if="!isMobile">SPACEBAR TO JUMP • ESC TO QUIT</span>
+                <span v-if="!isMobile">SPACEBAR JUMP • DOWN ARROW DESCEND • ESC QUIT</span>
                 <span v-else>TAP TO JUMP • BACK TO QUIT</span>
             </div>
         </div>
