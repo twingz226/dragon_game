@@ -776,8 +776,20 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
     
     // Head
     if (headImage.complete) {
+        c.save();
+        c.beginPath();
+        if (c.roundRect) {
+            // Define a rounded clipping path for the head
+            c.roundRect(x + 23 + ox, y + 2 + oy, 22, 22, 8);
+        } else {
+            // Fallback to circle clipping
+            c.arc(x + 34 + ox, y + 13 + oy, 11, 0, Math.PI * 2);
+        }
+        c.clip();
+        
         // Draw image (scaled/shifted to match hitbox)
         c.drawImage(headImage, x + 23 + ox, y + 2 + oy, 22, 22);
+        c.restore();
     } else {
         // Fallback to rectangle if image not loaded
         c.beginPath();
