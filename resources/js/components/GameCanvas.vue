@@ -137,7 +137,7 @@ function handleKeyDown(e) {
             // Player is dead but game hasn't ended for everyone yet
             console.log('Waiting for all players to finish...');
         }
-    } else if (e.code === 'ArrowDown') {
+    } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
         e.preventDefault();
         if (!localPlayer.onGround && !localPlayer.isDead) {
             console.log('Fast falling');
