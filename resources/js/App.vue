@@ -24,6 +24,7 @@ async function checkAuthentication() {
             const data = await response.json();
             currentUser.value = data.user;
             isAuthenticated.value = true;
+            playerName.value = data.user.name;
         } else {
             // Redirect to login if not authenticated
             window.location.href = '/login';
@@ -51,8 +52,6 @@ async function logout() {
 
 function handleJoined(data) {
     roomData.value = data;
-    playerName.value = data.playerName;
-    localStorage.setItem('dino_player_name', data.playerName);
     
     // All players go to waiting room first
     currentScreen.value = 'waiting';
@@ -93,6 +92,7 @@ function backToLobby() {
             <LobbyScreen 
                 v-if="currentScreen === 'lobby'" 
                 :playerId="playerId"
+                :playerName="playerName"
                 @joined="handleJoined" 
             />
             <WaitingRoom 

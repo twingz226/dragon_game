@@ -3,16 +3,18 @@ import { ref } from 'vue';
 import axios from 'axios';
 import Scoreboard from './Scoreboard.vue';
 
-const props = defineProps(['playerId']);
+const props = defineProps({
+    playerId: String,
+    playerName: String
+});
 const emit = defineEmits(['joined']);
 
-const playerName = ref(localStorage.getItem('dino_player_name') || '');
 const roomCodeInput = ref('');
 const loading = ref(false);
 const error = ref('');
 
 async function joinRoom(code = null) {
-    if (!playerName.value) {
+    if (!props.playerName) {
         error.value = "Enter your name first!";
         return;
     }
@@ -23,13 +25,13 @@ async function joinRoom(code = null) {
     try {
         const response = await axios.post('/api/rooms/join', {
             player_id: props.playerId,
-            player_name: playerName.value,
+            player_name: props.playerName,
             room_code: code
         });
         
         emit('joined', {
             ...response.data,
-            playerName: playerName.value
+            playerName: props.playerName
         });
     } catch (e) {
         error.value = e.response?.data?.error || "Failed to join room.";
@@ -48,11 +50,10 @@ async function joinRoom(code = null) {
 
         <div class="form-group">
             <input 
-                v-model="playerName" 
+                :value="playerName" 
                 type="text" 
                 placeholder="NICKNAME" 
-                maxlength="15"
-                @keyup.enter="joinRoom()"
+                disabled
             >
         </div>
 
