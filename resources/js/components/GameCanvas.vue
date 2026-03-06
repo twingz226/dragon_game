@@ -106,8 +106,8 @@ onUnmounted(() => {
 
 async function fetchHighScore() {
     try {
-        const response = await axios.post('/api/personal-high-scores', { player_names: [props.playerName] });
-        playerHighScore.value = response.data[props.playerName] || 0;
+        const response = await axios.post('/api/personal-high-scores', { player_ids: [props.playerId] });
+        playerHighScore.value = response.data[props.playerId] || 0;
     } catch (e) {
         console.error("Failed to fetch high score", e);
     }
@@ -454,20 +454,12 @@ function die() {
         });
     }
 
-    const finalScore = Math.floor(gameState.score);
-
     // Save score to DB
     axios.post('/api/scores', {
         player_name: props.playerName,
         player_id: props.playerId,
-        score: finalScore
-    }).then(() => {
-        scoreboardKey.value++;
+        score: Math.floor(gameState.score)
     });
-    
-    if (finalScore > playerHighScore.value) {
-        playerHighScore.value = finalScore;
-    }
     
     gameEnded.value = true;
 }
