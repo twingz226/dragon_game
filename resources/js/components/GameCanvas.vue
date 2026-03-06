@@ -793,7 +793,7 @@ function drawDino(x, y, color, name, isLocal, wingPhase = 0, onGround = true) {
 
     for (let i = 0; i < tailSegments; i++) {
         // Sine wave offset for the "swing"
-        const wave = Math.sin(wingPhase * 2.5 - i * 0.5) * (2 + i * 1.5);
+        const wave = Math.sin(wingPhase * 1.5 - i * 0.5) * (2 + i * 1.5);
         currentX -= 4.5; // Move left
         const targetY = (y + 20 + oy) + wave;
         
